@@ -41,7 +41,7 @@ const TaskLibraryManager = ({ taskLibraries, setTaskLibraries, tagLibraries }: T
       id: crypto.randomUUID(),
       name: newTaskLibrary.name,
       description: newTaskLibrary.description,
-      connectedTagLibraryId: newTaskLibrary.connectedTagLibraryId || undefined,
+      connectedTagLibraryId: newTaskLibrary.connectedTagLibraryId === "none" ? undefined : newTaskLibrary.connectedTagLibraryId || undefined,
       tagMappings: {},
       createdAt: new Date(),
     };
@@ -64,18 +64,18 @@ const TaskLibraryManager = ({ taskLibraries, setTaskLibraries, tagLibraries }: T
     });
   };
 
-  const updateTaskLibraryConnection = (taskLibraryId: string, tagLibraryId: string | undefined) => {
+  const updateTaskLibraryConnection = (taskLibraryId: string, tagLibraryId: string) => {
     setTaskLibraries(prev => 
       prev.map(lib => 
         lib.id === taskLibraryId 
-          ? { ...lib, connectedTagLibraryId: tagLibraryId, tagMappings: {} }
+          ? { ...lib, connectedTagLibraryId: tagLibraryId === "none" ? undefined : tagLibraryId, tagMappings: {} }
           : lib
       )
     );
     
     toast({
       title: "成功",
-      description: tagLibraryId ? "标签库连接成功" : "标签库连接已断开",
+      description: tagLibraryId !== "none" ? "标签库连接成功" : "标签库连接已断开",
     });
   };
 
@@ -126,14 +126,14 @@ const TaskLibraryManager = ({ taskLibraries, setTaskLibraries, tagLibraries }: T
               <div>
                 <Label htmlFor="tag-library">关联标签库 (可选)</Label>
                 <Select 
-                  value={newTaskLibrary.connectedTagLibraryId} 
+                  value={newTaskLibrary.connectedTagLibraryId || "none"} 
                   onValueChange={(value) => setNewTaskLibrary(prev => ({ ...prev, connectedTagLibraryId: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="选择要关联的标签库" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">不关联标签库</SelectItem>
+                    <SelectItem value="none">不关联标签库</SelectItem>
                     {tagLibraries.map((library) => (
                       <SelectItem key={library.id} value={library.id}>
                         {library.name}
@@ -206,14 +206,14 @@ const TaskLibraryManager = ({ taskLibraries, setTaskLibraries, tagLibraries }: T
                         {connectedTagLibrary.name}
                       </Badge>
                       <Select
-                        value={taskLibrary.connectedTagLibraryId || ""}
-                        onValueChange={(value) => updateTaskLibraryConnection(taskLibrary.id, value || undefined)}
+                        value={taskLibrary.connectedTagLibraryId || "none"}
+                        onValueChange={(value) => updateTaskLibraryConnection(taskLibrary.id, value)}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">断开连接</SelectItem>
+                          <SelectItem value="none">断开连接</SelectItem>
                           {tagLibraries.map((library) => (
                             <SelectItem key={library.id} value={library.id}>
                               {library.name}
@@ -226,13 +226,14 @@ const TaskLibraryManager = ({ taskLibraries, setTaskLibraries, tagLibraries }: T
                     <div className="space-y-2">
                       <span className="text-sm text-gray-500">未关联标签库</span>
                       <Select
-                        value=""
+                        value="none"
                         onValueChange={(value) => updateTaskLibraryConnection(taskLibrary.id, value)}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="选择标签库关联" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="none">不关联标签库</SelectItem>
                           {tagLibraries.map((library) => (
                             <SelectItem key={library.id} value={library.id}>
                               {library.name}
