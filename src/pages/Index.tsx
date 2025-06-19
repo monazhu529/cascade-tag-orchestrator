@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,9 +34,176 @@ export interface TaskLibrary {
   createdAt: Date;
 }
 
+// 创建示例标签库数据
+const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLibrary[] } => {
+  const sampleTagLibraries: TagLibrary[] = [
+    {
+      id: "tag-lib-1",
+      name: "电商分类标签库",
+      description: "用于电商商品分类的标签体系",
+      createdAt: new Date("2024-01-15"),
+      tags: [
+        {
+          id: "tag-1",
+          key: "category_electronics",
+          name: "电子产品",
+          level: 1
+        },
+        {
+          id: "tag-2",
+          key: "category_electronics_phone",
+          name: "手机",
+          level: 2,
+          parentId: "tag-1"
+        },
+        {
+          id: "tag-3",
+          key: "category_electronics_laptop",
+          name: "笔记本电脑",
+          level: 2,
+          parentId: "tag-1"
+        },
+        {
+          id: "tag-4",
+          key: "category_clothing",
+          name: "服装",
+          level: 1
+        },
+        {
+          id: "tag-5",
+          key: "category_clothing_mens",
+          name: "男装",
+          level: 2,
+          parentId: "tag-4"
+        },
+        {
+          id: "tag-6",
+          key: "category_clothing_womens",
+          name: "女装",
+          level: 2,
+          parentId: "tag-4"
+        }
+      ]
+    },
+    {
+      id: "tag-lib-2",
+      name: "项目管理标签库",
+      description: "用于项目任务分类和优先级管理",
+      createdAt: new Date("2024-02-20"),
+      tags: [
+        {
+          id: "tag-7",
+          key: "priority_high",
+          name: "高优先级",
+          level: 1
+        },
+        {
+          id: "tag-8",
+          key: "priority_medium",
+          name: "中优先级",
+          level: 1
+        },
+        {
+          id: "tag-9",
+          key: "priority_low",
+          name: "低优先级",
+          level: 1
+        },
+        {
+          id: "tag-10",
+          key: "status_todo",
+          name: "待处理",
+          level: 1
+        },
+        {
+          id: "tag-11",
+          key: "status_progress",
+          name: "进行中",
+          level: 1
+        },
+        {
+          id: "tag-12",
+          key: "status_done",
+          name: "已完成",
+          level: 1
+        }
+      ]
+    },
+    {
+      id: "tag-lib-3",
+      name: "内容分类标签库",
+      description: "用于博客文章和内容管理的分类标签",
+      createdAt: new Date("2024-03-10"),
+      tags: [
+        {
+          id: "tag-13",
+          key: "content_tech",
+          name: "技术",
+          level: 1
+        },
+        {
+          id: "tag-14",
+          key: "content_tech_frontend",
+          name: "前端开发",
+          level: 2,
+          parentId: "tag-13"
+        },
+        {
+          id: "tag-15",
+          key: "content_tech_backend",
+          name: "后端开发",
+          level: 2,
+          parentId: "tag-13"
+        },
+        {
+          id: "tag-16",
+          key: "content_lifestyle",
+          name: "生活方式",
+          level: 1
+        },
+        {
+          id: "tag-17",
+          key: "content_business",
+          name: "商业",
+          level: 1
+        }
+      ]
+    }
+  ];
+
+  const sampleTaskLibraries: TaskLibrary[] = [
+    {
+      id: "task-lib-1",
+      name: "电商平台任务库",
+      description: "管理电商平台的各类任务和工作流",
+      connectedTagLibraryId: "tag-lib-1",
+      tagMappings: {
+        "category_electronics": "电子产品类任务",
+        "category_clothing": "服装类任务"
+      },
+      createdAt: new Date("2024-01-20")
+    },
+    {
+      id: "task-lib-2",
+      name: "开发团队任务库",
+      description: "软件开发团队的项目任务管理",
+      connectedTagLibraryId: "tag-lib-2",
+      tagMappings: {
+        "priority_high": "紧急任务",
+        "status_todo": "待开发",
+        "status_progress": "开发中"
+      },
+      createdAt: new Date("2024-02-25")
+    }
+  ];
+
+  return { tagLibraries: sampleTagLibraries, taskLibraries: sampleTaskLibraries };
+};
+
 const Index = () => {
-  const [tagLibraries, setTagLibraries] = useState<TagLibrary[]>([]);
-  const [taskLibraries, setTaskLibraries] = useState<TaskLibrary[]>([]);
+  const sampleData = createSampleData();
+  const [tagLibraries, setTagLibraries] = useState<TagLibrary[]>(sampleData.tagLibraries);
+  const [taskLibraries, setTaskLibraries] = useState<TaskLibrary[]>(sampleData.taskLibraries);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
