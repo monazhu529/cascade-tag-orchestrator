@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Tags, List, Sync } from "lucide-react";
+import { Plus, Tags, List, RefreshCw } from "lucide-react";
 import TagLibraryManager from "@/components/TagLibraryManager";
 import TaskLibraryManager from "@/components/TaskLibraryManager";
 import SyncManager from "@/components/SyncManager";
@@ -59,7 +58,7 @@ const Index = () => {
               任务库管理
             </TabsTrigger>
             <TabsTrigger value="sync-management" className="flex items-center gap-2">
-              <Sync className="w-4 h-4" />
+              <RefreshCw className="w-4 h-4" />
               同步映射
             </TabsTrigger>
           </TabsList>
@@ -109,7 +108,7 @@ const Index = () => {
             <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Sync className="w-5 h-5 text-green-600" />
+                  <RefreshCw className="w-5 h-5 text-green-600" />
                   同步映射管理
                 </CardTitle>
                 <CardDescription>

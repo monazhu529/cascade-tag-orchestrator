@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Sync, CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
+import { RefreshCw, CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
 import { TaskLibrary, TagLibrary, Tag } from "@/pages/Index";
 import { useToast } from "@/hooks/use-toast";
 
@@ -111,7 +110,7 @@ const SyncManager = ({ tagLibraries, taskLibraries, setTaskLibraries }: SyncMana
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sync className="w-5 h-5 text-blue-600" />
+            <RefreshCw className="w-5 h-5 text-blue-600" />
             标签同步配置
           </CardTitle>
           <CardDescription>
@@ -184,12 +183,12 @@ const SyncManager = ({ tagLibraries, taskLibraries, setTaskLibraries }: SyncMana
               >
                 {isSyncing ? (
                   <>
-                    <Sync className="w-4 h-4 mr-2 animate-spin" />
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                     同步中...
                   </>
                 ) : (
                   <>
-                    <Sync className="w-4 h-4 mr-2" />
+                    <RefreshCw className="w-4 h-4 mr-2" />
                     开始同步
                   </>
                 )}
