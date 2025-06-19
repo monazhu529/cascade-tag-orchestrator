@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, ChevronRight, ChevronDown, X } from "lucide-react";
+import { Plus, Edit, Trash2, ChevronRight, ChevronDown, X, Check } from "lucide-react";
 import { TagLibrary, Tag } from "@/pages/Index";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,10 +21,14 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newTag, setNewTag] = useState({ key: "", name: "", parentId: "" });
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
+  const [inlineCreateMode, setInlineCreateMode] = useState<string | null>(null);
+  const [inlineTagData, setInlineTagData] = useState({ key: "", name: "" });
   const { toast } = useToast();
 
-  const createTag = () => {
-    if (!newTag.key.trim() || !newTag.name.trim()) {
+  const createTag = (parentId?: string) => {
+    const tagData = parentId ? inlineTagData : newTag;
+    
+    if (!tagData.key.trim() || !tagData.name.trim()) {
       toast({
         title: "错误",
         description: "请输入标签键和名称",
@@ -33,15 +37,16 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
       return;
     }
 
-    const parentTag = newTag.parentId ? findTagById(library.tags, newTag.parentId) : null;
+    const parentTag = parentId ? findTagById(library.tags, parentId) : 
+                     (newTag.parentId ? findTagById(library.tags, newTag.parentId) : null);
     const level = parentTag ? parentTag.level + 1 : 1;
 
     const tag: Tag = {
       id: crypto.randomUUID(),
-      key: newTag.key,
-      name: newTag.name,
+      key: tagData.key,
+      name: tagData.name,
       level,
-      parentId: newTag.parentId || undefined,
+      parentId: parentId || newTag.parentId || undefined,
       children: [],
     };
 
@@ -49,8 +54,16 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
     const updatedLibrary = { ...library, tags: updatedTags };
     
     onUpdate(updatedLibrary);
-    setNewTag({ key: "", name: "", parentId: "" });
-    setIsCreateDialogOpen(false);
+    
+    if (parentId) {
+      setInlineCreateMode(null);
+      setInlineTagData({ key: "", name: "" });
+      // Expand parent to show new child
+      setExpandedTags(prev => new Set([...prev, parentId]));
+    } else {
+      setNewTag({ key: "", name: "", parentId: "" });
+      setIsCreateDialogOpen(false);
+    }
     
     toast({
       title: "成功",
@@ -107,9 +120,67 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
     setExpandedTags(newExpanded);
   };
 
+  const startInlineCreate = (parentId: string) => {
+    setInlineCreateMode(parentId);
+    setInlineTagData({ key: "", name: "" });
+    // Expand parent to show the inline form
+    setExpandedTags(prev => new Set([...prev, parentId]));
+  };
+
+  const cancelInlineCreate = () => {
+    setInlineCreateMode(null);
+    setInlineTagData({ key: "", name: "" });
+  };
+
+  const renderInlineCreateForm = (parentId: string, depth: number) => {
+    if (inlineCreateMode !== parentId) return null;
+
+    return (
+      <div 
+        className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200"
+        style={{ marginLeft: `${(depth + 1) * 20}px` }}
+      >
+        <div className="w-4 h-4" />
+        <div className="flex-1 flex items-center gap-2">
+          <Input
+            placeholder="标签键 (如: category_new)"
+            value={inlineTagData.key}
+            onChange={(e) => setInlineTagData(prev => ({ ...prev, key: e.target.value }))}
+            className="h-8 text-sm"
+          />
+          <Input
+            placeholder="标签名称"
+            value={inlineTagData.name}
+            onChange={(e) => setInlineTagData(prev => ({ ...prev, name: e.target.value }))}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => createTag(parentId)}
+            className="h-8 w-8 p-0"
+          >
+            <Check className="w-4 h-4 text-green-600" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={cancelInlineCreate}
+            className="h-8 w-8 p-0"
+          >
+            <X className="w-4 h-4 text-red-600" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   const renderTag = (tag: Tag, depth: number = 0): React.ReactNode => {
     const hasChildren = tag.children && tag.children.length > 0;
     const isExpanded = expandedTags.has(tag.id);
+    const canAddChild = tag.level < 3; // Max 3 levels
 
     return (
       <div key={tag.id} className="space-y-2">
@@ -142,18 +213,32 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
             <span className="font-medium">{tag.name}</span>
           </div>
           
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => deleteTag(tag.id)}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          <div className="flex gap-1">
+            {canAddChild && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => startInlineCreate(tag.id)}
+                className="text-blue-600 hover:text-blue-700"
+                title="添加子标签"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => deleteTag(tag.id)}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
         
-        {hasChildren && isExpanded && (
+        {isExpanded && (
           <div>
-            {tag.children!.map(child => renderTag(child, depth + 1))}
+            {hasChildren && tag.children!.map(child => renderTag(child, depth + 1))}
+            {renderInlineCreateForm(tag.id, depth)}
           </div>
         )}
       </div>
@@ -174,7 +259,7 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
             </Button>
           </DialogTitle>
           <DialogDescription>
-            管理此标签库中的标签，支持多层级结构
+            管理此标签库中的标签，支持多层级结构。点击标签旁的 + 按钮可直接添加子标签。
           </DialogDescription>
         </DialogHeader>
 
@@ -184,7 +269,7 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                添加标签
+                添加根标签
               </Button>
               <DialogContent>
                 <DialogHeader>
@@ -216,7 +301,7 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
                         <SelectValue placeholder="选择父级标签" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">无父级标签</SelectItem>
+                        <SelectItem value="none">无父级标签</SelectItem>
                         {flatTags.map((tag) => (
                           <SelectItem key={tag.id} value={tag.id}>
                             {tag.name} (Level {tag.level})
@@ -225,7 +310,7 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={createTag} className="w-full">
+                  <Button onClick={() => createTag()} className="w-full">
                     创建标签
                   </Button>
                 </div>
