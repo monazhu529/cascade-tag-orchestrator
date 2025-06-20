@@ -29,10 +29,28 @@ const TagTreeTab = ({
   const canEdit = userPermission?.role === "administrator" || userPermission?.role === "operator";
 
   const handleCreateTag = (tagData: Omit<Tag, "id">) => {
+    // 确保标签数据完整
     const newTag: Tag = {
       id: crypto.randomUUID(),
-      ...tagData
+      key: tagData.key.trim(),
+      name: tagData.name.trim(),
+      value: tagData.value.trim(),
+      status: tagData.status,
+      remark: tagData.remark || "",
+      level: tagData.level,
+      parentId: tagData.parentId
     };
+    
+    // 验证键的唯一性
+    const existingTag = library.tags.find(tag => tag.key === newTag.key);
+    if (existingTag) {
+      toast({
+        title: "错误",
+        description: "标签键已存在，请使用不同的键",
+        variant: "destructive",
+      });
+      return;
+    }
     
     const updatedTags = [...library.tags, newTag];
     onUpdate({ ...library, tags: updatedTags });
@@ -45,7 +63,31 @@ const TagTreeTab = ({
     });
   };
 
-  const handleUpdateTag = (updatedTag: Tag) => {
+  const handleUpdateTag = (updatedTagData: Omit<Tag, "id">) => {
+    if (!editingTag) return;
+    
+    const updatedTag: Tag = {
+      ...editingTag,
+      key: updatedTagData.key.trim(),
+      name: updatedTagData.name.trim(),
+      value: updatedTagData.value.trim(),
+      status: updatedTagData.status,
+      remark: updatedTagData.remark || "",
+      level: updatedTagData.level,
+      parentId: updatedTagData.parentId
+    };
+    
+    // 验证键的唯一性（排除当前编辑的标签）
+    const existingTag = library.tags.find(tag => tag.key === updatedTag.key && tag.id !== updatedTag.id);
+    if (existingTag) {
+      toast({
+        title: "错误",
+        description: "标签键已存在，请使用不同的键",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const updatedTags = library.tags.map(tag =>
       tag.id === updatedTag.id ? updatedTag : tag
     );
@@ -85,6 +127,14 @@ const TagTreeTab = ({
     setIsAddingTag(true);
   };
 
+  const handleSave = (tagData: Omit<Tag, "id">) => {
+    if (editingTag) {
+      handleUpdateTag(tagData);
+    } else {
+      handleCreateTag(tagData);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -115,7 +165,7 @@ const TagTreeTab = ({
           tag={editingTag}
           parentId={selectedParentId}
           allTags={library.tags}
-          onSave={editingTag ? handleUpdateTag : handleCreateTag}
+          onSave={handleSave}
           onCancel={() => {
             setIsAddingTag(false);
             setEditingTag(null);

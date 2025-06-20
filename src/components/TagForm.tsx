@@ -28,6 +28,8 @@ const TagForm = ({ tag, parentId, allTags, onSave, onCancel }: TagFormProps) => 
     parentId: parentId
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (tag) {
       setFormData({
@@ -47,14 +49,35 @@ const TagForm = ({ tag, parentId, allTags, onSave, onCancel }: TagFormProps) => 
         parentId: parentId
       }));
     }
+    setErrors({});
   }, [tag, parentId, allTags]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.key.trim()) {
+      newErrors.key = "键不能为空";
+    } else if (allTags.some(t => t.key === formData.key && (!tag || t.id !== tag.id))) {
+      newErrors.key = "键已存在";
+    }
+    
+    if (!formData.name.trim()) {
+      newErrors.name = "名称不能为空";
+    }
+    
+    if (!formData.value.trim()) {
+      newErrors.value = "值不能为空";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.key.trim() || !formData.name.trim() || !formData.value.trim()) {
-      return;
+    if (validateForm()) {
+      onSave(formData);
     }
-    onSave(formData);
   };
 
   const getAvailableParents = () => {
@@ -96,8 +119,9 @@ const TagForm = ({ tag, parentId, allTags, onSave, onCancel }: TagFormProps) => 
                 value={formData.key}
                 onChange={(e) => setFormData({ ...formData, key: e.target.value })}
                 placeholder="tag_key"
-                required
+                className={errors.key ? "border-red-500" : ""}
               />
+              {errors.key && <p className="text-red-500 text-sm mt-1">{errors.key}</p>}
             </div>
             <div>
               <Label htmlFor="name">名称 (Name) *</Label>
@@ -106,8 +130,9 @@ const TagForm = ({ tag, parentId, allTags, onSave, onCancel }: TagFormProps) => 
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="标签名称"
-                required
+                className={errors.name ? "border-red-500" : ""}
               />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
           </div>
           
@@ -119,8 +144,9 @@ const TagForm = ({ tag, parentId, allTags, onSave, onCancel }: TagFormProps) => 
                 value={formData.value}
                 onChange={(e) => setFormData({ ...formData, value: e.target.value })}
                 placeholder="标签值"
-                required
+                className={errors.value ? "border-red-500" : ""}
               />
+              {errors.value && <p className="text-red-500 text-sm mt-1">{errors.value}</p>}
             </div>
             <div>
               <Label htmlFor="status">状态</Label>
@@ -145,6 +171,7 @@ const TagForm = ({ tag, parentId, allTags, onSave, onCancel }: TagFormProps) => 
               <Select 
                 value={formData.level.toString()} 
                 onValueChange={(value) => setFormData({ ...formData, level: parseInt(value) })}
+                disabled={!!parentId}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -165,6 +192,7 @@ const TagForm = ({ tag, parentId, allTags, onSave, onCancel }: TagFormProps) => 
                   parentId: value || undefined,
                   level: value ? (allTags.find(t => t.id === value)?.level || 0) + 1 : 1
                 })}
+                disabled={!!parentId && !tag}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="选择父标签 (可选)" />
