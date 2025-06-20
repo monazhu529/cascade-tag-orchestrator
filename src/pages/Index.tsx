@@ -23,6 +23,7 @@ export interface TagLibrary {
   id: string;
   name: string;
   description: string;
+  administrator: string;
   tags: Tag[];
   createdAt: Date;
 }
@@ -43,6 +44,7 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
       id: "tag-lib-1",
       name: "电商分类标签库",
       description: "用于电商商品分类的标签体系",
+      administrator: "张三",
       createdAt: new Date("2024-01-15"),
       tags: [
         {
@@ -109,6 +111,7 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
       id: "tag-lib-2",
       name: "项目管理标签库",
       description: "用于项目任务分类和优先级管理",
+      administrator: "李四",
       createdAt: new Date("2024-02-20"),
       tags: [
         {
@@ -171,6 +174,7 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
       id: "tag-lib-3",
       name: "内容分类标签库",
       description: "用于博客文章和内容管理的分类标签",
+      administrator: "王五",
       createdAt: new Date("2024-03-10"),
       tags: [
         {

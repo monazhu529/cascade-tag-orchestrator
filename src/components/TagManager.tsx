@@ -439,67 +439,6 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
       </DialogContent>
     </Dialog>
   );
-
-  function deleteTag(tagId: string) {
-    const updatedTags = library.tags.filter(tag => tag.id !== tagId && tag.parentId !== tagId);
-    const updatedLibrary = { ...library, tags: updatedTags };
-    onUpdate(updatedLibrary);
-    
-    toast({
-      title: "成功",
-      description: "标签删除成功",
-    });
-  }
-
-  function findTagById(tags: Tag[], id: string): Tag | null {
-    return tags.find(tag => tag.id === id) || null;
-  }
-
-  function buildTagTree(tags: Tag[]): Tag[] {
-    const tagMap = new Map<string, Tag>();
-    const rootTags: Tag[] = [];
-
-    // Create a map of all tags
-    tags.forEach(tag => {
-      tagMap.set(tag.id, { ...tag, children: [] });
-    });
-
-    // Build the tree structure
-    tagMap.forEach(tag => {
-      if (tag.parentId) {
-        const parent = tagMap.get(tag.parentId);
-        if (parent) {
-          parent.children!.push(tag);
-        }
-      } else {
-        rootTags.push(tag);
-      }
-    });
-
-    return rootTags;
-  }
-
-  function toggleExpanded(tagId: string) {
-    const newExpanded = new Set(expandedTags);
-    if (newExpanded.has(tagId)) {
-      newExpanded.delete(tagId);
-    } else {
-      newExpanded.add(tagId);
-    }
-    setExpandedTags(newExpanded);
-  }
-
-  function startInlineCreate(parentId: string) {
-    setInlineCreateMode(parentId);
-    setInlineTagData({ key: "", name: "", value: "", status: "active", remark: "" });
-    // Expand parent to show the inline form
-    setExpandedTags(prev => new Set([...prev, parentId]));
-  }
-
-  function cancelInlineCreate() {
-    setInlineCreateMode(null);
-    setInlineTagData({ key: "", name: "", value: "", status: "active", remark: "" });
-  }
 };
 
 export default TagManager;

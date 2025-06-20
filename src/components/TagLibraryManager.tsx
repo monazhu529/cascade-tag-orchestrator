@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Tag } from "lucide-react";
+import { Plus, Edit, Trash2, Tag, User } from "lucide-react";
 import { TagLibrary } from "@/pages/Index";
 import TagManager from "@/components/TagManager";
 import { useToast } from "@/hooks/use-toast";
@@ -20,7 +20,7 @@ interface TagLibraryManagerProps {
 const TagLibraryManager = ({ tagLibraries, setTagLibraries }: TagLibraryManagerProps) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedLibrary, setSelectedLibrary] = useState<TagLibrary | null>(null);
-  const [newLibrary, setNewLibrary] = useState({ name: "", description: "" });
+  const [newLibrary, setNewLibrary] = useState({ name: "", description: "", administrator: "" });
   const { toast } = useToast();
 
   const createTagLibrary = () => {
@@ -33,16 +33,26 @@ const TagLibraryManager = ({ tagLibraries, setTagLibraries }: TagLibraryManagerP
       return;
     }
 
+    if (!newLibrary.administrator.trim()) {
+      toast({
+        title: "错误",
+        description: "请输入管理员姓名",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const library: TagLibrary = {
       id: crypto.randomUUID(),
       name: newLibrary.name,
       description: newLibrary.description,
+      administrator: newLibrary.administrator,
       tags: [],
       createdAt: new Date(),
     };
 
     setTagLibraries(prev => [...prev, library]);
-    setNewLibrary({ name: "", description: "" });
+    setNewLibrary({ name: "", description: "", administrator: "" });
     setIsCreateDialogOpen(false);
     
     toast({
@@ -57,6 +67,12 @@ const TagLibraryManager = ({ tagLibraries, setTagLibraries }: TagLibraryManagerP
       title: "成功",
       description: "标签库删除成功",
     });
+  };
+
+  const getTagStatistics = (library: TagLibrary) => {
+    const level1Tags = library.tags.filter(tag => tag.level === 1).length;
+    const level2Tags = library.tags.filter(tag => tag.level === 2).length;
+    return { level1Tags, level2Tags };
   };
 
   return (
@@ -85,6 +101,15 @@ const TagLibraryManager = ({ tagLibraries, setTagLibraries }: TagLibraryManagerP
                   value={newLibrary.name}
                   onChange={(e) => setNewLibrary(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="输入标签库名称"
+                />
+              </div>
+              <div>
+                <Label htmlFor="administrator">管理员</Label>
+                <Input
+                  id="administrator"
+                  value={newLibrary.administrator}
+                  onChange={(e) => setNewLibrary(prev => ({ ...prev, administrator: e.target.value }))}
+                  placeholder="输入管理员姓名"
                 />
               </div>
               <div>
@@ -117,42 +142,58 @@ const TagLibraryManager = ({ tagLibraries, setTagLibraries }: TagLibraryManagerP
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {tagLibraries.map((library) => (
-            <Card key={library.id} className="hover:shadow-lg transition-shadow cursor-pointer bg-white/80 backdrop-blur-sm border border-gray-200">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="truncate">{library.name}</span>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedLibrary(library)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteTagLibrary(library.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+          {tagLibraries.map((library) => {
+            const { level1Tags, level2Tags } = getTagStatistics(library);
+            return (
+              <Card key={library.id} className="hover:shadow-lg transition-shadow cursor-pointer bg-white/80 backdrop-blur-sm border border-gray-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="truncate">{library.name}</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedLibrary(library)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteTagLibrary(library.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardTitle>
+                  <CardDescription>{library.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium">管理员：</span>
+                      <span className="text-sm text-gray-600">{library.administrator}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-2">
+                        <Badge variant="secondary">
+                          一级: {level1Tags}
+                        </Badge>
+                        <Badge variant="outline">
+                          二级: {level2Tags}
+                        </Badge>
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {library.createdAt.toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                </CardTitle>
-                <CardDescription>{library.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary">
-                    {library.tags.length} 个标签
-                  </Badge>
-                  <span className="text-sm text-gray-500">
-                    {library.createdAt.toLocaleDateString()}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
