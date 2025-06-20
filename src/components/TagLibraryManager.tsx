@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,9 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Trash2, Tag, User, Hash, Lock, Users } from "lucide-react";
-import { TagLibrary } from "@/pages/Index";
+import { TagLibrary } from "@/types/permissions";
 import { User as UserType, LibraryPermission, PermissionRequest } from "@/types/permissions";
-import TagManager from "@/components/TagManager";
 import PermissionRequestDialog from "@/components/PermissionRequestDialog";
 import { useToast } from "@/hooks/use-toast";
 
@@ -34,8 +34,8 @@ const TagLibraryManager = ({
   permissionRequests,
   setPermissionRequests
 }: TagLibraryManagerProps) => {
+  const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedLibrary, setSelectedLibrary] = useState<TagLibrary | null>(null);
   const [newLibrary, setNewLibrary] = useState({ name: "", description: "", administrator: "" });
   const [activeTab, setActiveTab] = useState("my-libraries");
   const [permissionDialogLibrary, setPermissionDialogLibrary] = useState<TagLibrary | null>(null);
@@ -143,7 +143,7 @@ const TagLibraryManager = ({
       setPermissionDialogLibrary(library);
       return;
     }
-    setSelectedLibrary(library);
+    navigate(`/tag-library/${library.id}`);
   };
 
   const handlePermissionRequest = (request: PermissionRequest) => {
@@ -258,7 +258,7 @@ const TagLibraryManager = ({
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedLibrary(library);
+                            navigate(`/tag-library/${library.id}`);
                           }}
                         >
                           <Edit className="w-4 h-4" />
@@ -335,21 +335,6 @@ const TagLibraryManager = ({
             );
           })}
         </div>
-      )}
-
-      {selectedLibrary && (
-        <TagManager 
-          library={selectedLibrary}
-          currentUser={currentUser}
-          userPermission={getUserPermission(selectedLibrary.id)}
-          onUpdate={(updatedLibrary) => {
-            setTagLibraries(prev => 
-              prev.map(lib => lib.id === updatedLibrary.id ? updatedLibrary : lib)
-            );
-            setSelectedLibrary(updatedLibrary);
-          }}
-          onClose={() => setSelectedLibrary(null)}
-        />
       )}
 
       {permissionDialogLibrary && (
