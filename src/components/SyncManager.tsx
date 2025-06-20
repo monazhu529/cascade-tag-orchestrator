@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
-import { TaskLibrary, TagLibrary } from "@/pages/Index";
+import { TaskLibrary } from "@/pages/Index";
+import { TagLibrary } from "@/types/permissions";
 import { useToast } from "@/hooks/use-toast";
 
 interface SyncManagerProps {

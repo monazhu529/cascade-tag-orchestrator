@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, List, Link } from "lucide-react";
-import { TaskLibrary, TagLibrary } from "@/pages/Index";
+import { TaskLibrary } from "@/pages/Index";
+import { TagLibrary } from "@/types/permissions";
 import { useToast } from "@/hooks/use-toast";
 
 interface TaskLibraryManagerProps {
