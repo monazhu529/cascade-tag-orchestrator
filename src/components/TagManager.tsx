@@ -1,101 +1,113 @@
 import { useState } from "react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, ChevronRight, ChevronDown, X, Check } from "lucide-react";
+import { Plus, Edit, Trash2, Tag as TagIcon, Save, X, Eye, EyeOff } from "lucide-react";
 import { TagLibrary, Tag } from "@/pages/Index";
+import { User, LibraryPermission } from "@/types/permissions";
 import { useToast } from "@/hooks/use-toast";
 
 interface TagManagerProps {
   library: TagLibrary;
+  currentUser: User;
+  userPermission?: LibraryPermission;
   onUpdate: (library: TagLibrary) => void;
   onClose: () => void;
 }
 
-const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
+const TagManager = ({ library, currentUser, userPermission, onUpdate, onClose }: TagManagerProps) => {
+  const [tags, setTags] = useState<Tag[]>(library.tags);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newTag, setNewTag] = useState({ 
-    key: "", 
-    name: "", 
+  const [editingTag, setEditingTag] = useState<Tag | null>(null);
+  const [newTag, setNewTag] = useState({
+    key: "",
+    name: "",
     value: "",
-    status: "active" as "active" | "inactive",
     remark: "",
-    parentId: "" 
-  });
-  const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
-  const [inlineCreateMode, setInlineCreateMode] = useState<string | null>(null);
-  const [inlineTagData, setInlineTagData] = useState({ 
-    key: "", 
-    name: "", 
-    value: "",
-    status: "active" as "active" | "inactive",
-    remark: ""
+    level: 1,
+    parentId: "",
+    status: "active" as "active" | "inactive"
   });
   const { toast } = useToast();
 
-  // 生成下一个可用的标签ID
+  // 权限检查
+  const canManageContent = userPermission?.role === "administrator" || userPermission?.role === "operator";
+  const canManageUsers = userPermission?.role === "administrator";
+
+  // Helper functions to generate IDs and manage tags
   const generateNextTagId = (): string => {
-    const existingTagNumbers = library.tags
-      .map(tag => tag.id)
-      .filter(id => id.startsWith(library.libraryId))
-      .map(id => parseInt(id.substring(3))) // 去掉前三位库ID
-      .filter(num => !isNaN(num));
+    const existingIds = tags.map(tag => {
+      const match = tag.id.match(/^\d{3}(\d{4})$/);
+      return match ? parseInt(match[1]) : 0;
+    }).filter(id => id > 0);
     
-    const maxNumber = existingTagNumbers.length > 0 ? Math.max(...existingTagNumbers) : 0;
-    const nextNumber = maxNumber + 1;
-    return library.libraryId + nextNumber.toString().padStart(4, '0');
+    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+    const nextId = (maxId + 1).toString().padStart(4, '0');
+    return `${library.libraryId}${nextId}`;
   };
 
-  const createTag = (parentId?: string) => {
-    const tagData = parentId ? inlineTagData : newTag;
-    
-    if (!tagData.key.trim() || !tagData.name.trim()) {
+  const createTag = () => {
+    if (!canManageContent) {
       toast({
-        title: "错误",
-        description: "请输入标签键和名称",
+        title: "权限不足",
+        description: "您没有权限管理此标签库的内容",
         variant: "destructive",
       });
       return;
     }
 
-    const parentTag = parentId ? findTagById(library.tags, parentId) : 
-                     (newTag.parentId ? findTagById(library.tags, newTag.parentId) : null);
-    const level = parentTag ? parentTag.level + 1 : 1;
+    if (!newTag.key.trim() || !newTag.name.trim() || !newTag.value.trim()) {
+      toast({
+        title: "错误",
+        description: "请填写所有必填字段",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Generate tag value automatically if not provided
-    const generatedValue = tagData.value.trim() || tagData.key.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    // 检查 key 是否重复
+    if (tags.some(tag => tag.key === newTag.key.trim())) {
+      toast({
+        title: "错误",
+        description: "标签键已存在",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const tag: Tag = {
       id: generateNextTagId(),
-      key: tagData.key,
-      name: tagData.name,
-      value: generatedValue,
-      status: tagData.status,
-      remark: tagData.remark,
-      level,
-      parentId: parentId || newTag.parentId || undefined,
-      children: [],
+      key: newTag.key.trim(),
+      name: newTag.name.trim(),
+      value: newTag.value.trim(),
+      remark: newTag.remark.trim(),
+      level: newTag.level,
+      parentId: newTag.parentId || undefined,
+      status: newTag.status,
     };
 
-    const updatedTags = [...library.tags, tag];
-    const updatedLibrary = { ...library, tags: updatedTags };
+    const updatedTags = [...tags, tag];
+    setTags(updatedTags);
     
+    const updatedLibrary = { ...library, tags: updatedTags };
     onUpdate(updatedLibrary);
     
-    if (parentId) {
-      setInlineCreateMode(null);
-      setInlineTagData({ key: "", name: "", value: "", status: "active", remark: "" });
-      // Expand parent to show new child
-      setExpandedTags(prev => new Set([...prev, parentId]));
-    } else {
-      setNewTag({ key: "", name: "", value: "", status: "active", remark: "", parentId: "" });
-      setIsCreateDialogOpen(false);
-    }
+    setNewTag({
+      key: "",
+      name: "",
+      value: "",
+      remark: "",
+      level: 1,
+      parentId: "",
+      status: "active"
+    });
+    setIsCreateDialogOpen(false);
     
     toast({
       title: "成功",
@@ -103,8 +115,53 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
     });
   };
 
-  const deleteTag = (tagId: string) => {
-    const updatedTags = library.tags.filter(tag => tag.id !== tagId && tag.parentId !== tagId);
+  const updateTag = (updatedTag: Tag) => {
+    if (!canManageContent) {
+      toast({
+        title: "权限不足",
+        description: "您没有权限管理此标签库的内容",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updatedTags = tags.map(tag => tag.id === updatedTag.id ? updatedTag : tag);
+    setTags(updatedTags);
+    
+    const updatedLibrary = { ...library, tags: updatedTags };
+    onUpdate(updatedLibrary);
+    setEditingTag(null);
+    
+    toast({
+      title: "成功",
+      description: "标签更新成功",
+    });
+  };
+
+  const deleteTag = (id: string) => {
+    if (!canManageContent) {
+      toast({
+        title: "权限不足",
+        description: "您没有权限管理此标签库的内容",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 检查是否有子标签
+    const hasChildren = tags.some(tag => tag.parentId === id);
+    if (hasChildren) {
+      toast({
+        title: "错误",
+        description: "请先删除所有子标签",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updatedTags = tags.filter(tag => tag.id !== id);
+    setTags(updatedTags);
+    
     const updatedLibrary = { ...library, tags: updatedTags };
     onUpdate(updatedLibrary);
     
@@ -114,337 +171,354 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
     });
   };
 
-  const findTagById = (tags: Tag[], id: string): Tag | null => {
-    return tags.find(tag => tag.id === id) || null;
-  };
-
-  const buildTagTree = (tags: Tag[]): Tag[] => {
-    const tagMap = new Map<string, Tag>();
-    const rootTags: Tag[] = [];
-
-    // Create a map of all tags
-    tags.forEach(tag => {
-      tagMap.set(tag.id, { ...tag, children: [] });
-    });
-
-    // Build the tree structure
-    tagMap.forEach(tag => {
-      if (tag.parentId) {
-        const parent = tagMap.get(tag.parentId);
-        if (parent) {
-          parent.children!.push(tag);
-        }
-      } else {
-        rootTags.push(tag);
-      }
-    });
-
-    return rootTags;
-  };
-
-  const toggleExpanded = (tagId: string) => {
-    const newExpanded = new Set(expandedTags);
-    if (newExpanded.has(tagId)) {
-      newExpanded.delete(tagId);
-    } else {
-      newExpanded.add(tagId);
+  const toggleTagStatus = (id: string) => {
+    if (!canManageContent) {
+      toast({
+        title: "权限不足",
+        description: "您没有权限管理此标签库的内容",
+        variant: "destructive",
+      });
+      return;
     }
-    setExpandedTags(newExpanded);
-  };
 
-  const startInlineCreate = (parentId: string) => {
-    setInlineCreateMode(parentId);
-    setInlineTagData({ key: "", name: "", value: "", status: "active", remark: "" });
-    // Expand parent to show the inline form
-    setExpandedTags(prev => new Set([...prev, parentId]));
-  };
-
-  const cancelInlineCreate = () => {
-    setInlineCreateMode(null);
-    setInlineTagData({ key: "", name: "", value: "", status: "active", remark: "" });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800";
-      case "inactive":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    return status === "active" ? "有效" : "无效";
-  };
-
-  const renderInlineCreateForm = (parentId: string, depth: number) => {
-    if (inlineCreateMode !== parentId) return null;
-
-    return (
-      <div 
-        className="flex flex-col gap-3 p-4 rounded-lg bg-blue-50 border border-blue-200"
-        style={{ marginLeft: `${(depth + 1) * 20}px` }}
-      >
-        <div className="grid grid-cols-2 gap-2">
-          <Input
-            placeholder="标签键 (如: category_new)"
-            value={inlineTagData.key}
-            onChange={(e) => setInlineTagData(prev => ({ ...prev, key: e.target.value }))}
-            className="h-8 text-sm"
-          />
-          <Input
-            placeholder="标签名称"
-            value={inlineTagData.name}
-            onChange={(e) => setInlineTagData(prev => ({ ...prev, name: e.target.value }))}
-            className="h-8 text-sm"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Input
-            placeholder="标签值 (可选，留空自动生成)"
-            value={inlineTagData.value}
-            onChange={(e) => setInlineTagData(prev => ({ ...prev, value: e.target.value }))}
-            className="h-8 text-sm"
-          />
-          <Select value={inlineTagData.status} onValueChange={(value: "active" | "inactive") => setInlineTagData(prev => ({ ...prev, status: value }))}>
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">有效</SelectItem>
-              <SelectItem value="inactive">无效</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <Input
-          placeholder="备注"
-          value={inlineTagData.remark}
-          onChange={(e) => setInlineTagData(prev => ({ ...prev, remark: e.target.value }))}
-          className="h-8 text-sm"
-        />
-        <div className="flex gap-1 justify-end">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => createTag(parentId)}
-            className="h-8 w-8 p-0"
-          >
-            <Check className="w-4 h-4 text-green-600" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={cancelInlineCreate}
-            className="h-8 w-8 p-0"
-          >
-            <X className="w-4 h-4 text-red-600" />
-          </Button>
-        </div>
-      </div>
+    const updatedTags = tags.map(tag => 
+      tag.id === id 
+        ? { ...tag, status: tag.status === "active" ? "inactive" as const : "active" as const }
+        : tag
     );
+    setTags(updatedTags);
+    
+    const updatedLibrary = { ...library, tags: updatedTags };
+    onUpdate(updatedLibrary);
   };
 
-  const renderTag = (tag: Tag, depth: number = 0): React.ReactNode => {
-    const hasChildren = tag.children && tag.children.length > 0;
-    const isExpanded = expandedTags.has(tag.id);
-    const canAddChild = tag.level < 3; // Max 3 levels
+  const getLevel1Tags = () => tags.filter(tag => tag.level === 1);
+  const getLevel2Tags = (parentId: string) => tags.filter(tag => tag.level === 2 && tag.parentId === parentId);
 
+  if (!userPermission) {
     return (
-      <div key={tag.id} className="space-y-2">
-        <div 
-          className="flex flex-col gap-2 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-          style={{ marginLeft: `${depth * 20}px` }}
-        >
-          <div className="flex items-center gap-2">
-            {hasChildren ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-0 h-auto"
-                onClick={() => toggleExpanded(tag.id)}
-              >
-                {isExpanded ? (
-                  <ChevronDown className="w-4 h-4" />
-                ) : (
-                  <ChevronRight className="w-4 h-4" />
-                )}
-              </Button>
-            ) : (
-              <div className="w-4 h-4" />
-            )}
-            
-            <div className="flex-1 flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className="text-xs">
-                Level {tag.level}
-              </Badge>
-              <Badge className={`text-xs ${getStatusColor(tag.status)}`}>
-                {getStatusText(tag.status)}
-              </Badge>
-              <code className="text-xs bg-blue-100 px-2 py-1 rounded text-blue-800">ID: {tag.id}</code>
-              <code className="text-sm bg-gray-200 px-2 py-1 rounded">{tag.key}</code>
-              <span className="font-medium">{tag.name}</span>
-            </div>
-            
-            <div className="flex gap-1">
-              {canAddChild && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => startInlineCreate(tag.id)}
-                  className="text-blue-600 hover:text-blue-700"
-                  title="添加子标签"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => deleteTag(tag.id)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
+      <Sheet open={true} onOpenChange={onClose}>
+        <SheetContent className="w-full max-w-4xl">
+          <SheetHeader>
+            <SheetTitle>权限不足</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col items-center justify-center h-full">
+            <p className="text-gray-500 mb-4">您没有权限访问此标签库</p>
+            <Button onClick={onClose}>关闭</Button>
           </div>
-          
-          <div className="ml-6 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-            <div><span className="font-medium">值:</span> {tag.value}</div>
-            <div><span className="font-medium">备注:</span> {tag.remark || "无"}</div>
-          </div>
-        </div>
-        
-        {isExpanded && (
-          <div>
-            {hasChildren && tag.children!.map(child => renderTag(child, depth + 1))}
-            {renderInlineCreateForm(tag.id, depth)}
-          </div>
-        )}
-      </div>
+        </SheetContent>
+      </Sheet>
     );
-  };
-
-  const tagTree = buildTagTree(library.tags);
-  const flatTags = library.tags.filter(tag => !tag.parentId || tag.level < 3); // Max 3 levels
+  }
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>管理标签 - {library.name} (库ID: {library.libraryId})</DialogTitle>
-          <DialogDescription>
-            管理此标签库中的标签，支持多层级结构。每个标签包含ID、名称、值、状态和备注信息。
-          </DialogDescription>
-        </DialogHeader>
+    <Sheet open={true} onOpenChange={onClose}>
+      <SheetContent className="w-full max-w-4xl">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <TagIcon className="w-5 h-5" />
+            {library.name} - 标签管理
+            <Badge variant={userPermission.role === "administrator" ? "default" : "secondary"}>
+              {userPermission.role === "administrator" ? "管理员" : "运营"}
+            </Badge>
+          </SheetTitle>
+        </SheetHeader>
 
-        <div className="space-y-4">
+        <div className="mt-6 space-y-6">
           <div className="flex justify-between items-center">
-            <h4 className="font-semibold">标签列表</h4>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                添加根标签
-              </Button>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>创建新标签</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+            <div>
+              <h3 className="text-lg font-semibold">标签列表</h3>
+              <p className="text-sm text-gray-600">
+                共 {tags.length} 个标签 | 一级标签: {getLevel1Tags().length} | 二级标签: {tags.filter(t => t.level === 2).length}
+              </p>
+            </div>
+            
+            {canManageContent && (
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    添加标签
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>创建新标签</DialogTitle>
+                    <DialogDescription>
+                      为标签库 "{library.name}" 添加新标签
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="tag-key">标签键 *</Label>
+                        <Input
+                          id="tag-key"
+                          value={newTag.key}
+                          onChange={(e) => setNewTag(prev => ({ ...prev, key: e.target.value }))}
+                          placeholder="如: category_electronics"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="tag-name">标签名称 *</Label>
+                        <Input
+                          id="tag-name"
+                          value={newTag.name}
+                          onChange={(e) => setNewTag(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="如: 电子产品"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="tag-value">标签值 *</Label>
+                        <Input
+                          id="tag-value"
+                          value={newTag.value}
+                          onChange={(e) => setNewTag(prev => ({ ...prev, value: e.target.value }))}
+                          placeholder="如: electronics"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="tag-level">标签层级</Label>
+                        <Select 
+                          value={newTag.level.toString()} 
+                          onValueChange={(value) => setNewTag(prev => ({ ...prev, level: parseInt(value) }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">一级标签</SelectItem>
+                            <SelectItem value="2">二级标签</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {newTag.level === 2 && (
+                      <div>
+                        <Label htmlFor="parent-tag">父级标签</Label>
+                        <Select 
+                          value={newTag.parentId} 
+                          onValueChange={(value) => setNewTag(prev => ({ ...prev, parentId: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="选择父级标签" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getLevel1Tags().map((tag) => (
+                              <SelectItem key={tag.id} value={tag.id}>
+                                {tag.name} ({tag.key})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
                     <div>
-                      <Label htmlFor="key">标签键 (Key)</Label>
-                      <Input
-                        id="key"
-                        value={newTag.key}
-                        onChange={(e) => setNewTag(prev => ({ ...prev, key: e.target.value }))}
-                        placeholder="例如: category_1"
+                      <Label htmlFor="tag-remark">备注</Label>
+                      <Textarea
+                        id="tag-remark"
+                        value={newTag.remark}
+                        onChange={(e) => setNewTag(prev => ({ ...prev, remark: e.target.value }))}
+                        placeholder="标签的详细说明..."
+                        rows={3}
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="name">标签名称</Label>
-                      <Input
-                        id="name"
-                        value={newTag.name}
-                        onChange={(e) => setNewTag(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="例如: 分类一"
-                      />
-                    </div>
+
+                    <Button onClick={createTag} className="w-full">
+                      创建标签
+                    </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="value">标签值</Label>
-                      <Input
-                        id="value"
-                        value={newTag.value}
-                        onChange={(e) => setNewTag(prev => ({ ...prev, value: e.target.value }))}
-                        placeholder="可选，留空自动生成"
-                      />
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+
+          <div className="space-y-4 max-h-[600px] overflow-y-auto">
+            {getLevel1Tags().map((level1Tag) => (
+              <Card key={level1Tag.id} className="border border-blue-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="default" className="bg-blue-100 text-blue-800">
+                        一级
+                      </Badge>
+                      <span className="font-medium">{level1Tag.name}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {level1Tag.key}
+                      </Badge>
+                      <Badge 
+                        variant={level1Tag.status === "active" ? "default" : "secondary"}
+                        className="text-xs"
+                      >
+                        {level1Tag.status === "active" ? "启用" : "禁用"}
+                      </Badge>
                     </div>
-                    <div>
-                      <Label htmlFor="status">状态</Label>
-                      <Select value={newTag.status} onValueChange={(value: "active" | "inactive") => setNewTag(prev => ({ ...prev, status: value }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">有效</SelectItem>
-                          <SelectItem value="inactive">无效</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    
+                    {canManageContent && (
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleTagStatus(level1Tag.id)}
+                        >
+                          {level1Tag.status === "active" ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingTag(level1Tag)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTag(level1Tag.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">
+                      <strong>ID:</strong> {level1Tag.id} | 
+                      <strong> 值:</strong> {level1Tag.value}
+                    </p>
+                    {level1Tag.remark && (
+                      <p className="text-sm text-gray-600">
+                        <strong>备注:</strong> {level1Tag.remark}
+                      </p>
+                    )}
+                    
+                    {/* 二级标签 */}
+                    {getLevel2Tags(level1Tag.id).length > 0 && (
+                      <div className="mt-4 pl-4 border-l-2 border-gray-200">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">子标签</h4>
+                        <div className="space-y-2">
+                          {getLevel2Tags(level1Tag.id).map((level2Tag) => (
+                            <div key={level2Tag.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  二级
+                                </Badge>
+                                <span className="text-sm font-medium">{level2Tag.name}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {level2Tag.key}
+                                </Badge>
+                                <Badge 
+                                  variant={level2Tag.status === "active" ? "default" : "secondary"}
+                                  className="text-xs"
+                                >
+                                  {level2Tag.status === "active" ? "启用" : "禁用"}
+                                </Badge>
+                              </div>
+                              
+                              {canManageContent && (
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => toggleTagStatus(level2Tag.id)}
+                                  >
+                                    {level2Tag.status === "active" ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setEditingTag(level2Tag)}
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteTag(level2Tag.id)}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* 编辑标签对话框 */}
+        {editingTag && canManageContent && (
+          <Dialog open={!!editingTag} onOpenChange={() => setEditingTag(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>编辑标签</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="remark">备注</Label>
-                    <Textarea
-                      id="remark"
-                      value={newTag.remark}
-                      onChange={(e) => setNewTag(prev => ({ ...prev, remark: e.target.value }))}
-                      placeholder="标签备注信息"
-                      rows={3}
+                    <Label htmlFor="edit-key">标签键</Label>
+                    <Input
+                      id="edit-key"
+                      value={editingTag.key}
+                      onChange={(e) => setEditingTag(prev => prev ? { ...prev, key: e.target.value } : null)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="parent">父级标签 (可选)</Label>
-                    <Select value={newTag.parentId} onValueChange={(value) => setNewTag(prev => ({ ...prev, parentId: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择父级标签" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">无父级标签</SelectItem>
-                        {flatTags.map((tag) => (
-                          <SelectItem key={tag.id} value={tag.id}>
-                            {tag.name} (Level {tag.level})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="edit-name">标签名称</Label>
+                    <Input
+                      id="edit-name"
+                      value={editingTag.name}
+                      onChange={(e) => setEditingTag(prev => prev ? { ...prev, name: e.target.value } : null)}
+                    />
                   </div>
-                  <Button onClick={() => createTag()} className="w-full">
-                    创建标签
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-value">标签值</Label>
+                  <Input
+                    id="edit-value"
+                    value={editingTag.value}
+                    onChange={(e) => setEditingTag(prev => prev ? { ...prev, value: e.target.value } : null)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-remark">备注</Label>
+                  <Textarea
+                    id="edit-remark"
+                    value={editingTag.remark}
+                    onChange={(e) => setEditingTag(prev => prev ? { ...prev, remark: e.target.value } : null)}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setEditingTag(null)}>
+                    取消
+                  </Button>
+                  <Button onClick={() => editingTag && updateTag(editingTag)}>
+                    <Save className="w-4 h-4 mr-2" />
+                    保存
                   </Button>
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {library.tags.length === 0 ? (
-            <Card className="border-dashed border-2 border-gray-300">
-              <CardContent className="flex flex-col items-center justify-center py-8">
-                <p className="text-gray-500 text-center">
-                  此标签库还没有标签<br />
-                  点击上方按钮添加第一个标签
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {tagTree.map(tag => renderTag(tag))}
-            </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 };
 

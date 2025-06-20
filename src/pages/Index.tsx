@@ -6,6 +6,7 @@ import { Plus, Tags, List, RefreshCw } from "lucide-react";
 import TagLibraryManager from "@/components/TagLibraryManager";
 import TaskLibraryManager from "@/components/TaskLibraryManager";
 import SyncManager from "@/components/SyncManager";
+import { User, LibraryPermission, PermissionRequest } from "@/types/permissions";
 
 export interface Tag {
   id: string;
@@ -38,8 +39,20 @@ export interface TaskLibrary {
   createdAt: Date;
 }
 
-// 创建示例标签库数据
-const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLibrary[] } => {
+// 创建示例数据
+const createSampleData = (): { 
+  tagLibraries: TagLibrary[], 
+  taskLibraries: TaskLibrary[],
+  currentUser: User,
+  permissions: LibraryPermission[],
+  permissionRequests: PermissionRequest[]
+} => {
+  const currentUser: User = {
+    id: "user-1",
+    name: "张三",
+    email: "zhangsan@example.com"
+  };
+
   const sampleTagLibraries: TagLibrary[] = [
     {
       id: "tag-lib-1",
@@ -258,13 +271,35 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
     }
   ];
 
-  return { tagLibraries: sampleTagLibraries, taskLibraries: sampleTaskLibraries };
+  const permissions: LibraryPermission[] = [
+    {
+      userId: "user-1",
+      libraryId: "tag-lib-1",
+      role: "administrator",
+      grantedAt: new Date("2024-01-15"),
+      grantedBy: "system"
+    },
+    {
+      userId: "user-1",
+      libraryId: "tag-lib-2",
+      role: "operator",
+      grantedAt: new Date("2024-02-20"),
+      grantedBy: "admin-1"
+    }
+  ];
+
+  const permissionRequests: PermissionRequest[] = [];
+
+  return { tagLibraries: sampleTagLibraries, taskLibraries: sampleTaskLibraries, currentUser, permissions, permissionRequests };
 };
 
 const Index = () => {
   const sampleData = createSampleData();
   const [tagLibraries, setTagLibraries] = useState<TagLibrary[]>(sampleData.tagLibraries);
   const [taskLibraries, setTaskLibraries] = useState<TaskLibrary[]>(sampleData.taskLibraries);
+  const [currentUser] = useState<User>(sampleData.currentUser);
+  const [permissions, setPermissions] = useState<LibraryPermission[]>(sampleData.permissions);
+  const [permissionRequests, setPermissionRequests] = useState<PermissionRequest[]>(sampleData.permissionRequests);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -307,6 +342,11 @@ const Index = () => {
                 <TagLibraryManager 
                   tagLibraries={tagLibraries}
                   setTagLibraries={setTagLibraries}
+                  currentUser={currentUser}
+                  permissions={permissions}
+                  setPermissions={setPermissions}
+                  permissionRequests={permissionRequests}
+                  setPermissionRequests={setPermissionRequests}
                 />
               </CardContent>
             </Card>
