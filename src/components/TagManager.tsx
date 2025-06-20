@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -320,12 +319,7 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>管理标签 - {library.name}</span>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="w-4 h-4" />
-            </Button>
-          </DialogTitle>
+          <DialogTitle>管理标签 - {library.name}</DialogTitle>
           <DialogDescription>
             管理此标签库中的标签，支持多层级结构。每个标签包含ID、名称、值、状态和备注信息。
           </DialogDescription>
