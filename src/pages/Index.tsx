@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +11,9 @@ export interface Tag {
   id: string;
   key: string;
   name: string;
+  value: string;
+  status: "active" | "inactive" | "pending";
+  remark: string;
   level: number;
   parentId?: string;
   children?: Tag[];
@@ -47,12 +49,18 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           id: "tag-1",
           key: "category_electronics",
           name: "电子产品",
+          value: "electronics",
+          status: "active",
+          remark: "包含所有电子设备分类",
           level: 1
         },
         {
           id: "tag-2",
           key: "category_electronics_phone",
           name: "手机",
+          value: "phone",
+          status: "active",
+          remark: "智能手机和功能手机",
           level: 2,
           parentId: "tag-1"
         },
@@ -60,6 +68,9 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           id: "tag-3",
           key: "category_electronics_laptop",
           name: "笔记本电脑",
+          value: "laptop",
+          status: "active",
+          remark: "各种品牌的笔记本电脑",
           level: 2,
           parentId: "tag-1"
         },
@@ -67,12 +78,18 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           id: "tag-4",
           key: "category_clothing",
           name: "服装",
+          value: "clothing",
+          status: "active",
+          remark: "服装类商品",
           level: 1
         },
         {
           id: "tag-5",
           key: "category_clothing_mens",
           name: "男装",
+          value: "mens",
+          status: "active",
+          remark: "男性服装",
           level: 2,
           parentId: "tag-4"
         },
@@ -80,6 +97,9 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           id: "tag-6",
           key: "category_clothing_womens",
           name: "女装",
+          value: "womens",
+          status: "pending",
+          remark: "女性服装，待完善分类",
           level: 2,
           parentId: "tag-4"
         }
@@ -95,36 +115,54 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           id: "tag-7",
           key: "priority_high",
           name: "高优先级",
+          value: "high",
+          status: "active",
+          remark: "紧急且重要的任务",
           level: 1
         },
         {
           id: "tag-8",
           key: "priority_medium",
           name: "中优先级",
+          value: "medium",
+          status: "active",
+          remark: "重要但不紧急的任务",
           level: 1
         },
         {
           id: "tag-9",
           key: "priority_low",
           name: "低优先级",
+          value: "low",
+          status: "active",
+          remark: "可以延后处理的任务",
           level: 1
         },
         {
           id: "tag-10",
           key: "status_todo",
           name: "待处理",
+          value: "todo",
+          status: "active",
+          remark: "尚未开始的任务",
           level: 1
         },
         {
           id: "tag-11",
           key: "status_progress",
           name: "进行中",
+          value: "in_progress",
+          status: "active",
+          remark: "正在执行的任务",
           level: 1
         },
         {
           id: "tag-12",
           key: "status_done",
           name: "已完成",
+          value: "done",
+          status: "inactive",
+          remark: "已完成的任务，归档状态",
           level: 1
         }
       ]
@@ -139,12 +177,18 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           id: "tag-13",
           key: "content_tech",
           name: "技术",
+          value: "technology",
+          status: "active",
+          remark: "技术相关内容",
           level: 1
         },
         {
           id: "tag-14",
           key: "content_tech_frontend",
           name: "前端开发",
+          value: "frontend",
+          status: "active",
+          remark: "前端技术和框架",
           level: 2,
           parentId: "tag-13"
         },
@@ -152,6 +196,9 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           id: "tag-15",
           key: "content_tech_backend",
           name: "后端开发",
+          value: "backend",
+          status: "active",
+          remark: "后端技术和架构",
           level: 2,
           parentId: "tag-13"
         },
@@ -159,12 +206,18 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           id: "tag-16",
           key: "content_lifestyle",
           name: "生活方式",
+          value: "lifestyle",
+          status: "pending",
+          remark: "生活方式相关内容，待扩展",
           level: 1
         },
         {
           id: "tag-17",
           key: "content_business",
           name: "商业",
+          value: "business",
+          status: "active",
+          remark: "商业和创业相关",
           level: 1
         }
       ]

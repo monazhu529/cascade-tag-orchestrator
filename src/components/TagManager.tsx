@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,19 +20,32 @@ interface TagManagerProps {
 
 const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newTag, setNewTag] = useState({ key: "", name: "", parentId: "" });
+  const [newTag, setNewTag] = useState({ 
+    key: "", 
+    name: "", 
+    value: "",
+    status: "active" as "active" | "inactive" | "pending",
+    remark: "",
+    parentId: "" 
+  });
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
   const [inlineCreateMode, setInlineCreateMode] = useState<string | null>(null);
-  const [inlineTagData, setInlineTagData] = useState({ key: "", name: "" });
+  const [inlineTagData, setInlineTagData] = useState({ 
+    key: "", 
+    name: "", 
+    value: "",
+    status: "active" as "active" | "inactive" | "pending",
+    remark: ""
+  });
   const { toast } = useToast();
 
   const createTag = (parentId?: string) => {
     const tagData = parentId ? inlineTagData : newTag;
     
-    if (!tagData.key.trim() || !tagData.name.trim()) {
+    if (!tagData.key.trim() || !tagData.name.trim() || !tagData.value.trim()) {
       toast({
         title: "错误",
-        description: "请输入标签键和名称",
+        description: "请输入标签键、名称和值",
         variant: "destructive",
       });
       return;
@@ -45,6 +59,9 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
       id: crypto.randomUUID(),
       key: tagData.key,
       name: tagData.name,
+      value: tagData.value,
+      status: tagData.status,
+      remark: tagData.remark,
       level,
       parentId: parentId || newTag.parentId || undefined,
       children: [],
@@ -57,11 +74,11 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
     
     if (parentId) {
       setInlineCreateMode(null);
-      setInlineTagData({ key: "", name: "" });
+      setInlineTagData({ key: "", name: "", value: "", status: "active", remark: "" });
       // Expand parent to show new child
       setExpandedTags(prev => new Set([...prev, parentId]));
     } else {
-      setNewTag({ key: "", name: "", parentId: "" });
+      setNewTag({ key: "", name: "", value: "", status: "active", remark: "", parentId: "" });
       setIsCreateDialogOpen(false);
     }
     
@@ -122,14 +139,27 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
 
   const startInlineCreate = (parentId: string) => {
     setInlineCreateMode(parentId);
-    setInlineTagData({ key: "", name: "" });
+    setInlineTagData({ key: "", name: "", value: "", status: "active", remark: "" });
     // Expand parent to show the inline form
     setExpandedTags(prev => new Set([...prev, parentId]));
   };
 
   const cancelInlineCreate = () => {
     setInlineCreateMode(null);
-    setInlineTagData({ key: "", name: "" });
+    setInlineTagData({ key: "", name: "", value: "", status: "active", remark: "" });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "inactive":
+        return "bg-gray-100 text-gray-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
   };
 
   const renderInlineCreateForm = (parentId: string, depth: number) => {
@@ -137,11 +167,10 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
 
     return (
       <div 
-        className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200"
+        className="flex flex-col gap-3 p-4 rounded-lg bg-blue-50 border border-blue-200"
         style={{ marginLeft: `${(depth + 1) * 20}px` }}
       >
-        <div className="w-4 h-4" />
-        <div className="flex-1 flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <Input
             placeholder="标签键 (如: category_new)"
             value={inlineTagData.key}
@@ -155,7 +184,31 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
             className="h-8 text-sm"
           />
         </div>
-        <div className="flex gap-1">
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            placeholder="标签值"
+            value={inlineTagData.value}
+            onChange={(e) => setInlineTagData(prev => ({ ...prev, value: e.target.value }))}
+            className="h-8 text-sm"
+          />
+          <Select value={inlineTagData.status} onValueChange={(value: "active" | "inactive" | "pending") => setInlineTagData(prev => ({ ...prev, status: value }))}>
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">启用</SelectItem>
+              <SelectItem value="inactive">禁用</SelectItem>
+              <SelectItem value="pending">待定</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Input
+          placeholder="备注"
+          value={inlineTagData.remark}
+          onChange={(e) => setInlineTagData(prev => ({ ...prev, remark: e.target.value }))}
+          className="h-8 text-sm"
+        />
+        <div className="flex gap-1 justify-end">
           <Button
             variant="ghost"
             size="sm"
@@ -185,53 +238,63 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
     return (
       <div key={tag.id} className="space-y-2">
         <div 
-          className="flex items-center gap-2 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+          className="flex flex-col gap-2 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
           style={{ marginLeft: `${depth * 20}px` }}
         >
-          {hasChildren ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="p-0 h-auto"
-              onClick={() => toggleExpanded(tag.id)}
-            >
-              {isExpanded ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
-            </Button>
-          ) : (
-            <div className="w-4 h-4" />
-          )}
-          
-          <div className="flex-1 flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
-              Level {tag.level}
-            </Badge>
-            <code className="text-sm bg-gray-200 px-2 py-1 rounded">{tag.key}</code>
-            <span className="font-medium">{tag.name}</span>
-          </div>
-          
-          <div className="flex gap-1">
-            {canAddChild && (
+          <div className="flex items-center gap-2">
+            {hasChildren ? (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => startInlineCreate(tag.id)}
-                className="text-blue-600 hover:text-blue-700"
-                title="添加子标签"
+                className="p-0 h-auto"
+                onClick={() => toggleExpanded(tag.id)}
               >
-                <Plus className="w-4 h-4" />
+                {isExpanded ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
               </Button>
+            ) : (
+              <div className="w-4 h-4" />
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => deleteTag(tag.id)}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            
+            <div className="flex-1 flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                Level {tag.level}
+              </Badge>
+              <Badge className={`text-xs ${getStatusColor(tag.status)}`}>
+                {tag.status === "active" ? "启用" : tag.status === "inactive" ? "禁用" : "待定"}
+              </Badge>
+              <code className="text-sm bg-gray-200 px-2 py-1 rounded">{tag.key}</code>
+              <span className="font-medium">{tag.name}</span>
+            </div>
+            
+            <div className="flex gap-1">
+              {canAddChild && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => startInlineCreate(tag.id)}
+                  className="text-blue-600 hover:text-blue-700"
+                  title="添加子标签"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => deleteTag(tag.id)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          
+          <div className="ml-6 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
+            <div><span className="font-medium">值:</span> {tag.value}</div>
+            <div><span className="font-medium">备注:</span> {tag.remark || "无"}</div>
           </div>
         </div>
         
@@ -250,7 +313,7 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>管理标签 - {library.name}</span>
@@ -259,7 +322,7 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
             </Button>
           </DialogTitle>
           <DialogDescription>
-            管理此标签库中的标签，支持多层级结构。点击标签旁的 + 按钮可直接添加子标签。
+            管理此标签库中的标签，支持多层级结构。每个标签包含ID、名称、值、状态和备注信息。
           </DialogDescription>
         </DialogHeader>
 
@@ -276,22 +339,58 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
                   <DialogTitle>创建新标签</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="key">标签键 (Key)</Label>
-                    <Input
-                      id="key"
-                      value={newTag.key}
-                      onChange={(e) => setNewTag(prev => ({ ...prev, key: e.target.value }))}
-                      placeholder="例如: category_1"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="key">标签键 (Key)</Label>
+                      <Input
+                        id="key"
+                        value={newTag.key}
+                        onChange={(e) => setNewTag(prev => ({ ...prev, key: e.target.value }))}
+                        placeholder="例如: category_1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="name">标签名称</Label>
+                      <Input
+                        id="name"
+                        value={newTag.name}
+                        onChange={(e) => setNewTag(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="例如: 分类一"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="value">标签值</Label>
+                      <Input
+                        id="value"
+                        value={newTag.value}
+                        onChange={(e) => setNewTag(prev => ({ ...prev, value: e.target.value }))}
+                        placeholder="例如: category1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="status">状态</Label>
+                      <Select value={newTag.status} onValueChange={(value: "active" | "inactive" | "pending") => setNewTag(prev => ({ ...prev, status: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">启用</SelectItem>
+                          <SelectItem value="inactive">禁用</SelectItem>
+                          <SelectItem value="pending">待定</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div>
-                    <Label htmlFor="name">标签名称</Label>
-                    <Input
-                      id="name"
-                      value={newTag.name}
-                      onChange={(e) => setNewTag(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="例如: 分类一"
+                    <Label htmlFor="remark">备注</Label>
+                    <Textarea
+                      id="remark"
+                      value={newTag.remark}
+                      onChange={(e) => setNewTag(prev => ({ ...prev, remark: e.target.value }))}
+                      placeholder="标签备注信息"
+                      rows={3}
                     />
                   </div>
                   <div>
