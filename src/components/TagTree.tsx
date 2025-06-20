@@ -16,6 +16,7 @@ interface TagTreeProps {
 interface TagNodeProps {
   tag: Tag;
   children: Tag[];
+  allTags: Tag[];
   canEdit: boolean;
   onEdit: (tag: Tag) => void;
   onDelete: (tagId: string) => void;
@@ -26,6 +27,7 @@ interface TagNodeProps {
 const TagNode = ({ 
   tag, 
   children, 
+  allTags,
   canEdit, 
   onEdit, 
   onDelete, 
@@ -112,12 +114,13 @@ const TagNode = ({
       {hasChildren && isExpanded && (
         <div className="ml-4">
           {children.map((child) => {
-            const grandChildren = tags.filter(t => t.parentId === child.id);
+            const grandChildren = allTags.filter(t => t.parentId === child.id);
             return (
               <TagNode
                 key={child.id}
                 tag={child}
                 children={grandChildren}
+                allTags={allTags}
                 canEdit={canEdit}
                 onEdit={onEdit}
                 onDelete={onDelete}
@@ -156,6 +159,7 @@ const TagTree = ({ tags, canEdit, onEdit, onDelete, onAddChild }: TagTreeProps) 
             key={rootTag.id}
             tag={rootTag}
             children={children}
+            allTags={tags}
             canEdit={canEdit}
             onEdit={onEdit}
             onDelete={onDelete}
