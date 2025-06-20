@@ -24,7 +24,7 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
     key: "", 
     name: "", 
     value: "",
-    status: "active" as "active" | "inactive" | "pending",
+    status: "active" as "active" | "inactive",
     remark: "",
     parentId: "" 
   });
@@ -34,7 +34,7 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
     key: "", 
     name: "", 
     value: "",
-    status: "active" as "active" | "inactive" | "pending",
+    status: "active" as "active" | "inactive",
     remark: ""
   });
   const { toast } = useToast();
@@ -42,10 +42,10 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
   const createTag = (parentId?: string) => {
     const tagData = parentId ? inlineTagData : newTag;
     
-    if (!tagData.key.trim() || !tagData.name.trim() || !tagData.value.trim()) {
+    if (!tagData.key.trim() || !tagData.name.trim()) {
       toast({
         title: "错误",
-        description: "请输入标签键、名称和值",
+        description: "请输入标签键和名称",
         variant: "destructive",
       });
       return;
@@ -55,11 +55,14 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
                      (newTag.parentId ? findTagById(library.tags, newTag.parentId) : null);
     const level = parentTag ? parentTag.level + 1 : 1;
 
+    // Generate tag value automatically if not provided
+    const generatedValue = tagData.value.trim() || tagData.key.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
     const tag: Tag = {
       id: crypto.randomUUID(),
       key: tagData.key,
       name: tagData.name,
-      value: tagData.value,
+      value: generatedValue,
       status: tagData.status,
       remark: tagData.remark,
       level,
@@ -154,12 +157,14 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
       case "active":
         return "bg-green-100 text-green-800";
       case "inactive":
-        return "bg-gray-100 text-gray-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const getStatusText = (status: string) => {
+    return status === "active" ? "有效" : "无效";
   };
 
   const renderInlineCreateForm = (parentId: string, depth: number) => {
@@ -186,19 +191,18 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
         </div>
         <div className="grid grid-cols-2 gap-2">
           <Input
-            placeholder="标签值"
+            placeholder="标签值 (可选，留空自动生成)"
             value={inlineTagData.value}
             onChange={(e) => setInlineTagData(prev => ({ ...prev, value: e.target.value }))}
             className="h-8 text-sm"
           />
-          <Select value={inlineTagData.status} onValueChange={(value: "active" | "inactive" | "pending") => setInlineTagData(prev => ({ ...prev, status: value }))}>
+          <Select value={inlineTagData.status} onValueChange={(value: "active" | "inactive") => setInlineTagData(prev => ({ ...prev, status: value }))}>
             <SelectTrigger className="h-8 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="active">启用</SelectItem>
-              <SelectItem value="inactive">禁用</SelectItem>
-              <SelectItem value="pending">待定</SelectItem>
+              <SelectItem value="active">有效</SelectItem>
+              <SelectItem value="inactive">无效</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -259,13 +263,14 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
               <div className="w-4 h-4" />
             )}
             
-            <div className="flex-1 flex items-center gap-2">
+            <div className="flex-1 flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="text-xs">
                 Level {tag.level}
               </Badge>
               <Badge className={`text-xs ${getStatusColor(tag.status)}`}>
-                {tag.status === "active" ? "启用" : tag.status === "inactive" ? "禁用" : "待定"}
+                {getStatusText(tag.status)}
               </Badge>
+              <code className="text-xs bg-blue-100 px-2 py-1 rounded text-blue-800">ID: {tag.id}</code>
               <code className="text-sm bg-gray-200 px-2 py-1 rounded">{tag.key}</code>
               <span className="font-medium">{tag.name}</span>
             </div>
@@ -366,19 +371,18 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
                         id="value"
                         value={newTag.value}
                         onChange={(e) => setNewTag(prev => ({ ...prev, value: e.target.value }))}
-                        placeholder="例如: category1"
+                        placeholder="可选，留空自动生成"
                       />
                     </div>
                     <div>
                       <Label htmlFor="status">状态</Label>
-                      <Select value={newTag.status} onValueChange={(value: "active" | "inactive" | "pending") => setNewTag(prev => ({ ...prev, status: value }))}>
+                      <Select value={newTag.status} onValueChange={(value: "active" | "inactive") => setNewTag(prev => ({ ...prev, status: value }))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="active">启用</SelectItem>
-                          <SelectItem value="inactive">禁用</SelectItem>
-                          <SelectItem value="pending">待定</SelectItem>
+                          <SelectItem value="active">有效</SelectItem>
+                          <SelectItem value="inactive">无效</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -435,6 +439,67 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
       </DialogContent>
     </Dialog>
   );
+
+  function deleteTag(tagId: string) {
+    const updatedTags = library.tags.filter(tag => tag.id !== tagId && tag.parentId !== tagId);
+    const updatedLibrary = { ...library, tags: updatedTags };
+    onUpdate(updatedLibrary);
+    
+    toast({
+      title: "成功",
+      description: "标签删除成功",
+    });
+  }
+
+  function findTagById(tags: Tag[], id: string): Tag | null {
+    return tags.find(tag => tag.id === id) || null;
+  }
+
+  function buildTagTree(tags: Tag[]): Tag[] {
+    const tagMap = new Map<string, Tag>();
+    const rootTags: Tag[] = [];
+
+    // Create a map of all tags
+    tags.forEach(tag => {
+      tagMap.set(tag.id, { ...tag, children: [] });
+    });
+
+    // Build the tree structure
+    tagMap.forEach(tag => {
+      if (tag.parentId) {
+        const parent = tagMap.get(tag.parentId);
+        if (parent) {
+          parent.children!.push(tag);
+        }
+      } else {
+        rootTags.push(tag);
+      }
+    });
+
+    return rootTags;
+  }
+
+  function toggleExpanded(tagId: string) {
+    const newExpanded = new Set(expandedTags);
+    if (newExpanded.has(tagId)) {
+      newExpanded.delete(tagId);
+    } else {
+      newExpanded.add(tagId);
+    }
+    setExpandedTags(newExpanded);
+  }
+
+  function startInlineCreate(parentId: string) {
+    setInlineCreateMode(parentId);
+    setInlineTagData({ key: "", name: "", value: "", status: "active", remark: "" });
+    // Expand parent to show the inline form
+    setExpandedTags(prev => new Set([...prev, parentId]));
+  }
+
+  function cancelInlineCreate() {
+    setInlineCreateMode(null);
+    setInlineTagData({ key: "", name: "", value: "", status: "active", remark: "" });
+  }
 };
 
 export default TagManager;

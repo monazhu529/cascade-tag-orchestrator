@@ -12,7 +12,7 @@ export interface Tag {
   key: string;
   name: string;
   value: string;
-  status: "active" | "inactive" | "pending";
+  status: "active" | "inactive";
   remark: string;
   level: number;
   parentId?: string;
@@ -98,8 +98,8 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           key: "category_clothing_womens",
           name: "女装",
           value: "womens",
-          status: "pending",
-          remark: "女性服装，待完善分类",
+          status: "inactive",
+          remark: "女性服装，暂时停用",
           level: 2,
           parentId: "tag-4"
         }
@@ -207,8 +207,8 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           key: "content_lifestyle",
           name: "生活方式",
           value: "lifestyle",
-          status: "pending",
-          remark: "生活方式相关内容，待扩展",
+          status: "inactive",
+          remark: "生活方式相关内容，暂时停用",
           level: 1
         },
         {
