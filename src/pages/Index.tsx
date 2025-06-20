@@ -21,6 +21,7 @@ export interface Tag {
 
 export interface TagLibrary {
   id: string;
+  libraryId: string; // 三位数库ID，如 "101"
   name: string;
   description: string;
   administrator: string;
@@ -42,13 +43,14 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
   const sampleTagLibraries: TagLibrary[] = [
     {
       id: "tag-lib-1",
+      libraryId: "101",
       name: "电商分类标签库",
       description: "用于电商商品分类的标签体系",
       administrator: "张三",
       createdAt: new Date("2024-01-15"),
       tags: [
         {
-          id: "tag-1",
+          id: "1010001",
           key: "category_electronics",
           name: "电子产品",
           value: "electronics",
@@ -57,27 +59,27 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           level: 1
         },
         {
-          id: "tag-2",
+          id: "1010002",
           key: "category_electronics_phone",
           name: "手机",
           value: "phone",
           status: "active",
           remark: "智能手机和功能手机",
           level: 2,
-          parentId: "tag-1"
+          parentId: "1010001"
         },
         {
-          id: "tag-3",
+          id: "1010003",
           key: "category_electronics_laptop",
           name: "笔记本电脑",
           value: "laptop",
           status: "active",
           remark: "各种品牌的笔记本电脑",
           level: 2,
-          parentId: "tag-1"
+          parentId: "1010001"
         },
         {
-          id: "tag-4",
+          id: "1010004",
           key: "category_clothing",
           name: "服装",
           value: "clothing",
@@ -86,36 +88,37 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           level: 1
         },
         {
-          id: "tag-5",
+          id: "1010005",
           key: "category_clothing_mens",
           name: "男装",
           value: "mens",
           status: "active",
           remark: "男性服装",
           level: 2,
-          parentId: "tag-4"
+          parentId: "1010004"
         },
         {
-          id: "tag-6",
+          id: "1010006",
           key: "category_clothing_womens",
           name: "女装",
           value: "womens",
           status: "inactive",
           remark: "女性服装，暂时停用",
           level: 2,
-          parentId: "tag-4"
+          parentId: "1010004"
         }
       ]
     },
     {
       id: "tag-lib-2",
+      libraryId: "102",
       name: "项目管理标签库",
       description: "用于项目任务分类和优先级管理",
       administrator: "李四",
       createdAt: new Date("2024-02-20"),
       tags: [
         {
-          id: "tag-7",
+          id: "1020001",
           key: "priority_high",
           name: "高优先级",
           value: "high",
@@ -124,7 +127,7 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           level: 1
         },
         {
-          id: "tag-8",
+          id: "1020002",
           key: "priority_medium",
           name: "中优先级",
           value: "medium",
@@ -133,7 +136,7 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           level: 1
         },
         {
-          id: "tag-9",
+          id: "1020003",
           key: "priority_low",
           name: "低优先级",
           value: "low",
@@ -142,7 +145,7 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           level: 1
         },
         {
-          id: "tag-10",
+          id: "1020004",
           key: "status_todo",
           name: "待处理",
           value: "todo",
@@ -151,7 +154,7 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           level: 1
         },
         {
-          id: "tag-11",
+          id: "1020005",
           key: "status_progress",
           name: "进行中",
           value: "in_progress",
@@ -160,7 +163,7 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           level: 1
         },
         {
-          id: "tag-12",
+          id: "1020006",
           key: "status_done",
           name: "已完成",
           value: "done",
@@ -172,13 +175,14 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
     },
     {
       id: "tag-lib-3",
+      libraryId: "103",
       name: "内容分类标签库",
       description: "用于博客文章和内容管理的分类标签",
       administrator: "王五",
       createdAt: new Date("2024-03-10"),
       tags: [
         {
-          id: "tag-13",
+          id: "1030001",
           key: "content_tech",
           name: "技术",
           value: "technology",
@@ -187,27 +191,27 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           level: 1
         },
         {
-          id: "tag-14",
+          id: "1030002",
           key: "content_tech_frontend",
           name: "前端开发",
           value: "frontend",
           status: "active",
           remark: "前端技术和框架",
           level: 2,
-          parentId: "tag-13"
+          parentId: "1030001"
         },
         {
-          id: "tag-15",
+          id: "1030003",
           key: "content_tech_backend",
           name: "后端开发",
           value: "backend",
           status: "active",
           remark: "后端技术和架构",
           level: 2,
-          parentId: "tag-13"
+          parentId: "1030001"
         },
         {
-          id: "tag-16",
+          id: "1030004",
           key: "content_lifestyle",
           name: "生活方式",
           value: "lifestyle",
@@ -216,7 +220,7 @@ const createSampleData = (): { tagLibraries: TagLibrary[], taskLibraries: TaskLi
           level: 1
         },
         {
-          id: "tag-17",
+          id: "1030005",
           key: "content_business",
           name: "商业",
           value: "business",

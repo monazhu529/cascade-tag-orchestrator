@@ -38,6 +38,19 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
   });
   const { toast } = useToast();
 
+  // 生成下一个可用的标签ID
+  const generateNextTagId = (): string => {
+    const existingTagNumbers = library.tags
+      .map(tag => tag.id)
+      .filter(id => id.startsWith(library.libraryId))
+      .map(id => parseInt(id.substring(3))) // 去掉前三位库ID
+      .filter(num => !isNaN(num));
+    
+    const maxNumber = existingTagNumbers.length > 0 ? Math.max(...existingTagNumbers) : 0;
+    const nextNumber = maxNumber + 1;
+    return library.libraryId + nextNumber.toString().padStart(4, '0');
+  };
+
   const createTag = (parentId?: string) => {
     const tagData = parentId ? inlineTagData : newTag;
     
@@ -58,7 +71,7 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
     const generatedValue = tagData.value.trim() || tagData.key.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
     const tag: Tag = {
-      id: crypto.randomUUID(),
+      id: generateNextTagId(),
       key: tagData.key,
       name: tagData.name,
       value: generatedValue,
@@ -86,7 +99,7 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
     
     toast({
       title: "成功",
-      description: "标签创建成功",
+      description: `标签创建成功，ID: ${tag.id}`,
     });
   };
 
@@ -319,7 +332,7 @@ const TagManager = ({ library, onUpdate, onClose }: TagManagerProps) => {
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>管理标签 - {library.name}</DialogTitle>
+          <DialogTitle>管理标签 - {library.name} (库ID: {library.libraryId})</DialogTitle>
           <DialogDescription>
             管理此标签库中的标签，支持多层级结构。每个标签包含ID、名称、值、状态和备注信息。
           </DialogDescription>

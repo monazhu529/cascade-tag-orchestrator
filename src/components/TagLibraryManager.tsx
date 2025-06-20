@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Tag, User } from "lucide-react";
+import { Plus, Edit, Trash2, Tag, User, Hash } from "lucide-react";
 import { TagLibrary } from "@/pages/Index";
 import TagManager from "@/components/TagManager";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,13 @@ const TagLibraryManager = ({ tagLibraries, setTagLibraries }: TagLibraryManagerP
   const [selectedLibrary, setSelectedLibrary] = useState<TagLibrary | null>(null);
   const [newLibrary, setNewLibrary] = useState({ name: "", description: "", administrator: "" });
   const { toast } = useToast();
+
+  // 生成下一个可用的库ID
+  const generateNextLibraryId = (): string => {
+    const existingIds = tagLibraries.map(lib => parseInt(lib.libraryId)).filter(id => !isNaN(id));
+    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 100;
+    return (maxId + 1).toString().padStart(3, '0');
+  };
 
   const createTagLibrary = () => {
     if (!newLibrary.name.trim()) {
@@ -44,6 +51,7 @@ const TagLibraryManager = ({ tagLibraries, setTagLibraries }: TagLibraryManagerP
 
     const library: TagLibrary = {
       id: crypto.randomUUID(),
+      libraryId: generateNextLibraryId(),
       name: newLibrary.name,
       description: newLibrary.description,
       administrator: newLibrary.administrator,
@@ -57,7 +65,7 @@ const TagLibraryManager = ({ tagLibraries, setTagLibraries }: TagLibraryManagerP
     
     toast({
       title: "成功",
-      description: "标签库创建成功",
+      description: `标签库创建成功，库ID: ${library.libraryId}`,
     });
   };
 
@@ -170,6 +178,12 @@ const TagLibraryManager = ({ tagLibraries, setTagLibraries }: TagLibraryManagerP
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Hash className="w-4 h-4 text-purple-600" />
+                      <span className="text-sm font-medium">库ID：</span>
+                      <Badge variant="outline" className="text-purple-700 bg-purple-50">{library.libraryId}</Badge>
+                    </div>
+                    
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4 text-blue-600" />
                       <span className="text-sm font-medium">管理员：</span>
