@@ -5,8 +5,11 @@ import { Button } from "@/components/ui/button";
 import { TagLibrary, User, LibraryPermission, Tag } from "@/types/permissions";
 import TagTree from "@/components/TagTree";
 import TagForm from "@/components/TagForm";
+import TagImportExport from "@/components/TagImportExport";
+import BatchEditDialog from "@/components/BatchEditDialog";
+import TagLogDialog from "@/components/TagLogDialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus } from "lucide-react";
+import { Plus, Download, Upload, Expand, Shrink, Edit } from "lucide-react";
 
 interface TagTreeTabProps {
   library: TagLibrary;
@@ -24,12 +27,17 @@ const TagTreeTab = ({
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [selectedParentId, setSelectedParentId] = useState<string | undefined>(undefined);
+  const [showImportExport, setShowImportExport] = useState(false);
+  const [showBatchEdit, setShowBatchEdit] = useState(false);
+  const [showTagLog, setShowTagLog] = useState(false);
+  const [selectedTagForLog, setSelectedTagForLog] = useState<Tag | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [expandedAll, setExpandedAll] = useState(true);
   const { toast } = useToast();
 
   const canEdit = userPermission?.role === "administrator" || userPermission?.role === "operator";
 
   const handleCreateTag = (tagData: Omit<Tag, "id">) => {
-    // 确保标签数据完整
     const newTag: Tag = {
       id: crypto.randomUUID(),
       key: tagData.key.trim(),
@@ -41,7 +49,6 @@ const TagTreeTab = ({
       parentId: tagData.parentId
     };
     
-    // 验证键的唯一性
     const existingTag = library.tags.find(tag => tag.key === newTag.key);
     if (existingTag) {
       toast({
@@ -77,7 +84,6 @@ const TagTreeTab = ({
       parentId: updatedTagData.parentId
     };
     
-    // 验证键的唯一性（排除当前编辑的标签）
     const existingTag = library.tags.find(tag => tag.key === updatedTag.key && tag.id !== updatedTag.id);
     if (existingTag) {
       toast({
@@ -101,7 +107,6 @@ const TagTreeTab = ({
   };
 
   const handleDeleteTag = (tagId: string) => {
-    // 递归删除子标签
     const deleteTagAndChildren = (id: string, tags: Tag[]): Tag[] => {
       const children = tags.filter(tag => tag.parentId === id);
       let filteredTags = tags.filter(tag => tag.id !== id);
@@ -122,6 +127,18 @@ const TagTreeTab = ({
     });
   };
 
+  const handleToggleTagStatus = (tagId: string) => {
+    const updatedTags = library.tags.map(tag =>
+      tag.id === tagId ? { ...tag, status: tag.status === "active" ? "inactive" : "active" as "active" | "inactive" } : tag
+    );
+    onUpdate({ ...library, tags: updatedTags });
+    
+    toast({
+      title: "成功",
+      description: "标签状态更新成功",
+    });
+  };
+
   const handleAddChild = (parentId: string) => {
     setSelectedParentId(parentId);
     setIsAddingTag(true);
@@ -135,6 +152,42 @@ const TagTreeTab = ({
     }
   };
 
+  const handleImportTags = (importedTags: Tag[]) => {
+    const updatedTags = [...library.tags, ...importedTags];
+    onUpdate({ ...library, tags: updatedTags });
+    
+    toast({
+      title: "成功",
+      description: `成功导入 ${importedTags.length} 个标签`,
+    });
+  };
+
+  const handleBatchUpdate = (field: "remark" | "status" | "value", value: string) => {
+    const updatedTags = library.tags.map(tag => {
+      if (selectedTags.includes(tag.id)) {
+        if (field === "status") {
+          return { ...tag, status: value as "active" | "inactive" };
+        }
+        return { ...tag, [field]: value };
+      }
+      return tag;
+    });
+    
+    onUpdate({ ...library, tags: updatedTags });
+    setSelectedTags([]);
+    setShowBatchEdit(false);
+    
+    toast({
+      title: "成功",
+      description: `成功批量更新 ${selectedTags.length} 个标签`,
+    });
+  };
+
+  const handleShowTagLog = (tag: Tag) => {
+    setSelectedTagForLog(tag);
+    setShowTagLog(true);
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -142,10 +195,43 @@ const TagTreeTab = ({
           <CardTitle className="flex items-center justify-between">
             标签树状结构
             {canEdit && (
-              <Button onClick={() => setIsAddingTag(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                添加根标签
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => setIsAddingTag(true)} size="sm">
+                  <Plus className="w-4 h-4 mr-2" />
+                  新增
+                </Button>
+                <Button onClick={() => setShowImportExport(true)} variant="outline" size="sm">
+                  <Upload className="w-4 h-4 mr-2" />
+                  导入
+                </Button>
+                <Button onClick={() => setShowImportExport(true)} variant="outline" size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  导出
+                </Button>
+                <Button 
+                  onClick={() => setExpandedAll(!expandedAll)} 
+                  variant="outline" 
+                  size="sm"
+                >
+                  {expandedAll ? (
+                    <>
+                      <Shrink className="w-4 h-4 mr-2" />
+                      全部折叠
+                    </>
+                  ) : (
+                    <>
+                      <Expand className="w-4 h-4 mr-2" />
+                      全部展开
+                    </>
+                  )}
+                </Button>
+                {selectedTags.length > 0 && (
+                  <Button onClick={() => setShowBatchEdit(true)} variant="outline" size="sm">
+                    <Edit className="w-4 h-4 mr-2" />
+                    批量编辑 ({selectedTags.length})
+                  </Button>
+                )}
+              </div>
             )}
           </CardTitle>
         </CardHeader>
@@ -153,9 +239,14 @@ const TagTreeTab = ({
           <TagTree 
             tags={library.tags}
             canEdit={canEdit}
+            expandedAll={expandedAll}
+            selectedTags={selectedTags}
             onEdit={setEditingTag}
             onDelete={handleDeleteTag}
             onAddChild={handleAddChild}
+            onToggleStatus={handleToggleTagStatus}
+            onShowLog={handleShowTagLog}
+            onSelectTags={setSelectedTags}
           />
         </CardContent>
       </Card>
@@ -170,6 +261,32 @@ const TagTreeTab = ({
             setIsAddingTag(false);
             setEditingTag(null);
             setSelectedParentId(undefined);
+          }}
+        />
+      )}
+
+      {showImportExport && (
+        <TagImportExport
+          tags={library.tags}
+          onImport={handleImportTags}
+          onClose={() => setShowImportExport(false)}
+        />
+      )}
+
+      {showBatchEdit && (
+        <BatchEditDialog
+          selectedCount={selectedTags.length}
+          onUpdate={handleBatchUpdate}
+          onClose={() => setShowBatchEdit(false)}
+        />
+      )}
+
+      {showTagLog && selectedTagForLog && (
+        <TagLogDialog
+          tag={selectedTagForLog}
+          onClose={() => {
+            setShowTagLog(false);
+            setSelectedTagForLog(null);
           }}
         />
       )}

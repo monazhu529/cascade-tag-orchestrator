@@ -1,16 +1,22 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tag } from "@/types/permissions";
-import { ChevronRight, ChevronDown, Edit, Trash2, Plus } from "lucide-react";
+import { ChevronRight, ChevronDown, Edit, Trash2, Plus, Power, History } from "lucide-react";
 
 interface TagTreeProps {
   tags: Tag[];
   canEdit: boolean;
+  expandedAll?: boolean;
+  selectedTags: string[];
   onEdit: (tag: Tag) => void;
   onDelete: (tagId: string) => void;
   onAddChild: (parentId: string) => void;
+  onToggleStatus: (tagId: string) => void;
+  onShowLog: (tag: Tag) => void;
+  onSelectTags: (tagIds: string[]) => void;
 }
 
 interface TagNodeProps {
@@ -18,9 +24,14 @@ interface TagNodeProps {
   children: Tag[];
   allTags: Tag[];
   canEdit: boolean;
+  expandedAll?: boolean;
+  selectedTags: string[];
   onEdit: (tag: Tag) => void;
   onDelete: (tagId: string) => void;
   onAddChild: (parentId: string) => void;
+  onToggleStatus: (tagId: string) => void;
+  onShowLog: (tag: Tag) => void;
+  onSelectTags: (tagIds: string[]) => void;
   level: number;
 }
 
@@ -29,18 +40,44 @@ const TagNode = ({
   children, 
   allTags,
   canEdit, 
+  expandedAll,
+  selectedTags,
   onEdit, 
   onDelete, 
-  onAddChild, 
+  onAddChild,
+  onToggleStatus,
+  onShowLog,
+  onSelectTags,
   level 
 }: TagNodeProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = children.length > 0;
+  const isSelected = selectedTags.includes(tag.id);
+
+  useEffect(() => {
+    if (expandedAll !== undefined) {
+      setIsExpanded(expandedAll);
+    }
+  }, [expandedAll]);
+
+  const handleSelectChange = (checked: boolean) => {
+    if (checked) {
+      onSelectTags([...selectedTags, tag.id]);
+    } else {
+      onSelectTags(selectedTags.filter(id => id !== tag.id));
+    }
+  };
 
   return (
     <div className="border-l-2 border-gray-200 pl-4 ml-2">
       <div className="flex items-center gap-2 py-2 group">
         <div className="flex items-center gap-1">
+          {canEdit && (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={handleSelectChange}
+            />
+          )}
           {hasChildren && (
             <Button
               variant="ghost"
@@ -88,6 +125,7 @@ const TagNode = ({
               size="sm"
               onClick={() => onAddChild(tag.id)}
               className="p-1 w-8 h-8"
+              title="添加子标签"
             >
               <Plus className="w-4 h-4" />
             </Button>
@@ -96,14 +134,34 @@ const TagNode = ({
               size="sm"
               onClick={() => onEdit(tag)}
               className="p-1 w-8 h-8"
+              title="编辑"
             >
               <Edit className="w-4 h-4" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => onToggleStatus(tag.id)}
+              className={`p-1 w-8 h-8 ${tag.status === "active" ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}`}
+              title={tag.status === "active" ? "停用" : "启用"}
+            >
+              <Power className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onShowLog(tag)}
+              className="p-1 w-8 h-8 text-blue-600 hover:text-blue-700"
+              title="查看日志"
+            >
+              <History className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => onDelete(tag.id)}
               className="p-1 w-8 h-8 text-red-600 hover:text-red-700"
+              title="删除"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -122,9 +180,14 @@ const TagNode = ({
                 children={grandChildren}
                 allTags={allTags}
                 canEdit={canEdit}
+                expandedAll={expandedAll}
+                selectedTags={selectedTags}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onAddChild={onAddChild}
+                onToggleStatus={onToggleStatus}
+                onShowLog={onShowLog}
+                onSelectTags={onSelectTags}
                 level={level + 1}
               />
             );
@@ -135,8 +198,18 @@ const TagNode = ({
   );
 };
 
-const TagTree = ({ tags, canEdit, onEdit, onDelete, onAddChild }: TagTreeProps) => {
-  // Get root tags (level 1 or no parent)
+const TagTree = ({ 
+  tags, 
+  canEdit, 
+  expandedAll, 
+  selectedTags, 
+  onEdit, 
+  onDelete, 
+  onAddChild, 
+  onToggleStatus, 
+  onShowLog, 
+  onSelectTags 
+}: TagTreeProps) => {
   const rootTags = tags.filter(tag => tag.level === 1 || !tag.parentId);
 
   if (tags.length === 0) {
@@ -161,9 +234,14 @@ const TagTree = ({ tags, canEdit, onEdit, onDelete, onAddChild }: TagTreeProps) 
             children={children}
             allTags={tags}
             canEdit={canEdit}
+            expandedAll={expandedAll}
+            selectedTags={selectedTags}
             onEdit={onEdit}
             onDelete={onDelete}
             onAddChild={onAddChild}
+            onToggleStatus={onToggleStatus}
+            onShowLog={onShowLog}
+            onSelectTags={onSelectTags}
             level={1}
           />
         );
