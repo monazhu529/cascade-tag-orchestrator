@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,8 @@ const TagLibraryManager = ({
   const [permissionDialogLibrary, setPermissionDialogLibrary] = useState<TagLibrary | null>(null);
   const [searchLibraryId, setSearchLibraryId] = useState("");
   const [searchLibraryName, setSearchLibraryName] = useState("");
+  const [myLibSearchId, setMyLibSearchId] = useState("");
+  const [myLibSearchName, setMyLibSearchName] = useState("");
   const { toast } = useToast();
 
   // 权限检查函数
@@ -64,9 +67,25 @@ const TagLibraryManager = ({
 
   // 获取我的库和全部库
   const getMyLibraries = (): TagLibrary[] => {
-    return tagLibraries.filter(library => 
+    let myLibraries = tagLibraries.filter(library => 
       permissions.some(p => p.libraryId === library.id && p.userId === currentUser.id)
     );
+
+    // 按库ID过滤
+    if (myLibSearchId.trim()) {
+      myLibraries = myLibraries.filter(library =>
+        library.libraryId.toLowerCase().includes(myLibSearchId.trim().toLowerCase())
+      );
+    }
+
+    // 按库名称关键词过滤
+    if (myLibSearchName.trim()) {
+      myLibraries = myLibraries.filter(library =>
+        library.name.toLowerCase().includes(myLibSearchName.trim().toLowerCase())
+      );
+    }
+
+    return myLibraries;
   };
 
   const getAllLibraries = (): TagLibrary[] => {
@@ -242,58 +261,62 @@ const TagLibraryManager = ({
         </Dialog>
       </div>
 
-      {/* 搜索区域 - 仅在全部库标签页显示 */}
-      {activeTab === "all-libraries" && (
-        <Card className="bg-white/50 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Search className="w-5 h-5 text-blue-600" />
-              搜索标签库
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="search-library-id">库ID查询</Label>
-                <Input
-                  id="search-library-id"
-                  value={searchLibraryId}
-                  onChange={(e) => setSearchLibraryId(e.target.value)}
-                  placeholder="输入库ID进行搜索..."
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="search-library-name">库名称关键词查询</Label>
-                <Input
-                  id="search-library-name"
-                  value={searchLibraryName}
-                  onChange={(e) => setSearchLibraryName(e.target.value)}
-                  placeholder="输入库名称关键词进行搜索..."
-                  className="mt-1"
-                />
-              </div>
+      {/* 搜索区域 - 在两个标签页都显示 */}
+      <Card className="bg-white/50 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Search className="w-5 h-5 text-blue-600" />
+            搜索标签库
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor={activeTab === "my-libraries" ? "my-search-library-id" : "search-library-id"}>库ID查询</Label>
+              <Input
+                id={activeTab === "my-libraries" ? "my-search-library-id" : "search-library-id"}
+                value={activeTab === "my-libraries" ? myLibSearchId : searchLibraryId}
+                onChange={(e) => activeTab === "my-libraries" ? setMyLibSearchId(e.target.value) : setSearchLibraryId(e.target.value)}
+                placeholder="输入库ID进行搜索..."
+                className="mt-1"
+              />
             </div>
-            {(searchLibraryId || searchLibraryName) && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-                <Search className="w-4 h-4" />
-                找到 {displayLibraries.length} 个匹配的标签库
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
+            <div>
+              <Label htmlFor={activeTab === "my-libraries" ? "my-search-library-name" : "search-library-name"}>库名称关键词查询</Label>
+              <Input
+                id={activeTab === "my-libraries" ? "my-search-library-name" : "search-library-name"}
+                value={activeTab === "my-libraries" ? myLibSearchName : searchLibraryName}
+                onChange={(e) => activeTab === "my-libraries" ? setMyLibSearchName(e.target.value) : setSearchLibraryName(e.target.value)}
+                placeholder="输入库名称关键词进行搜索..."
+                className="mt-1"
+              />
+            </div>
+          </div>
+          {((activeTab === "my-libraries" && (myLibSearchId || myLibSearchName)) || 
+            (activeTab === "all-libraries" && (searchLibraryId || searchLibraryName))) && (
+            <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+              <Search className="w-4 h-4" />
+              找到 {displayLibraries.length} 个匹配的标签库
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (activeTab === "my-libraries") {
+                    setMyLibSearchId("");
+                    setMyLibSearchName("");
+                  } else {
                     setSearchLibraryId("");
                     setSearchLibraryName("");
-                  }}
-                  className="ml-auto text-blue-600 hover:text-blue-800"
-                >
-                  清除搜索
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                  }
+                }}
+                className="ml-auto text-blue-600 hover:text-blue-800"
+              >
+                清除搜索
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {displayLibraries.length === 0 ? (
         <Card className="border-dashed border-2 border-gray-300">
@@ -301,13 +324,17 @@ const TagLibraryManager = ({
             <Tag className="w-12 h-12 text-gray-400 mb-4" />
             <p className="text-gray-500 text-center">
               {activeTab === "my-libraries" 
-                ? "您还没有权限访问任何标签库" 
+                ? (myLibSearchId || myLibSearchName) 
+                  ? "没有找到匹配的标签库"
+                  : "您还没有权限访问任何标签库"
                 : (searchLibraryId || searchLibraryName) 
                   ? "没有找到匹配的标签库"
                   : "还没有标签库"
               }<br />
               {activeTab === "my-libraries" 
-                ? "向管理员申请权限或创建新的标签库" 
+                ? (myLibSearchId || myLibSearchName)
+                  ? "请尝试调整搜索条件"
+                  : "向管理员申请权限或创建新的标签库"
                 : (searchLibraryId || searchLibraryName)
                   ? "请尝试调整搜索条件"
                   : "点击上方按钮创建您的第一个标签库"
