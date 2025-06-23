@@ -1,16 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Info, Tag, List, History, AlertCircle } from "lucide-react";
+import { ArrowLeft, Info, Tag, List, History, AlertCircle, Users } from "lucide-react";
 import { TagLibrary, User, LibraryPermission } from "@/types/permissions";
 import LibraryInfoTab from "@/components/LibraryInfoTab";
 import TagTreeTab from "@/components/TagTreeTab";
 import TasksTab from "@/components/TasksTab";
 import OperationLogTab from "@/components/OperationLogTab";
+import UserManagement from "@/components/UserManagement";
 
 interface TagLibraryEditProps {
   tagLibraries: TagLibrary[];
@@ -146,7 +146,7 @@ const TagLibraryEdit = ({
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="info" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="info" className="flex items-center gap-2">
                     <Info className="w-4 h-4" />
                     标签库信息
@@ -154,6 +154,10 @@ const TagLibraryEdit = ({
                   <TabsTrigger value="tags" className="flex items-center gap-2">
                     <Tag className="w-4 h-4" />
                     标签列表
+                  </TabsTrigger>
+                  <TabsTrigger value="permissions" className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    权限管理
                   </TabsTrigger>
                   <TabsTrigger value="tasks" className="flex items-center gap-2">
                     <List className="w-4 h-4" />
@@ -180,6 +184,15 @@ const TagLibraryEdit = ({
                     library={library}
                     currentUser={currentUser}
                     userPermission={userPermission}
+                    onUpdate={handleUpdate}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="permissions" className="mt-6">
+                  <UserManagement 
+                    library={library}
+                    currentUser={currentUser}
+                    permissions={permissions}
                     onUpdate={handleUpdate}
                   />
                 </TabsContent>
