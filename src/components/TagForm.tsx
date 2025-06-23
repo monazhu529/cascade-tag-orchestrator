@@ -186,11 +186,11 @@ const TagForm = ({ tag, parentId, allTags, onSave, onCancel }: TagFormProps) => 
             <div>
               <Label htmlFor="parent">父标签</Label>
               <Select 
-                value={formData.parentId || ""} 
+                value={formData.parentId || "none"} 
                 onValueChange={(value) => setFormData({ 
                   ...formData, 
-                  parentId: value || undefined,
-                  level: value ? (allTags.find(t => t.id === value)?.level || 0) + 1 : 1
+                  parentId: value === "none" ? undefined : value,
+                  level: value === "none" ? 1 : (allTags.find(t => t.id === value)?.level || 0) + 1
                 })}
                 disabled={!!parentId && !tag}
               >
@@ -198,7 +198,7 @@ const TagForm = ({ tag, parentId, allTags, onSave, onCancel }: TagFormProps) => 
                   <SelectValue placeholder="选择父标签 (可选)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">无父标签</SelectItem>
+                  <SelectItem value="none">无父标签</SelectItem>
                   {getAvailableParents().map((parent) => (
                     <SelectItem key={parent.id} value={parent.id}>
                       {parent.name} ({parent.key})
