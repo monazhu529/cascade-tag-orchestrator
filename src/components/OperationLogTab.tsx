@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TagLibrary, User, LibraryPermission } from "@/types/permissions";
 import { History, Search, Filter, Calendar, User as UserIcon, Tag, Settings } from "lucide-react";
 
@@ -251,7 +252,7 @@ const OperationLogTab = ({ library, currentUser, userPermission }: OperationLogT
         </CardContent>
       </Card>
 
-      {/* 操作日志列表 */}
+      {/* 操作日志表格 */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -268,59 +269,70 @@ const OperationLogTab = ({ library, currentUser, userPermission }: OperationLogT
               }
             </div>
           ) : (
-            <div className="overflow-hidden">
-              <div className="divide-y divide-gray-200">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[120px]">操作类型</TableHead>
+                  <TableHead className="w-[100px]">目标类型</TableHead>
+                  <TableHead>操作详情</TableHead>
+                  <TableHead className="w-[100px]">操作人</TableHead>
+                  <TableHead className="w-[160px]">时间</TableHead>
+                  <TableHead className="w-[200px]">变更内容</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="py-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="mt-1">
+                  <TableRow key={log.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
                         {getOperationIcon(log.operation)}
+                        <Badge className={getOperationColor(log.operation)}>
+                          {getOperationLabel(log.operation)}
+                        </Badge>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge className={getOperationColor(log.operation)}>
-                            {getOperationLabel(log.operation)}
-                          </Badge>
-                          <Badge variant="outline">
-                            {getTargetLabel(log.target)}
-                          </Badge>
-                          <span className="text-sm text-gray-500">
-                            {log.timestamp.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="text-sm font-medium text-gray-900 mb-1">
-                          {log.details}
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
-                          <span className="flex items-center gap-1">
-                            <UserIcon className="w-3 h-3" />
-                            {log.userName}
-                          </span>
-                          {log.targetName && (
-                            <span>
-                              目标: {log.targetName} (ID: {log.targetId})
-                            </span>
-                          )}
-                        </div>
-                        {(log.oldValue || log.newValue) && (
-                          <div className="bg-gray-100 p-2 rounded text-xs">
-                            {log.oldValue && (
-                              <div>原值: <span className="text-red-600">{log.oldValue}</span></div>
-                            )}
-                            {log.newValue && (
-                              <div>新值: <span className="text-green-600">{log.newValue}</span></div>
-                            )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {getTargetLabel(log.target)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium text-sm">{log.details}</div>
+                        {log.targetName && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            目标: {log.targetName} (ID: {log.targetId})
                           </div>
                         )}
                       </div>
-                    </div>
-                  </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 text-sm">
+                        <UserIcon className="w-3 h-3" />
+                        {log.userName}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {log.timestamp.toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      {(log.oldValue || log.newValue) ? (
+                        <div className="text-xs space-y-1">
+                          {log.oldValue && (
+                            <div>原值: <span className="text-red-600">{log.oldValue}</span></div>
+                          )}
+                          {log.newValue && (
+                            <div>新值: <span className="text-green-600">{log.newValue}</span></div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-xs">无变更</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </div>
-            </div>
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
