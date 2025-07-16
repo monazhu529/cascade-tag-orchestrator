@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Tags, List, RefreshCw } from "lucide-react";
+import { Plus, Tags, List } from "lucide-react";
 import TagLibraryManager from "@/components/TagLibraryManager";
 import TaskLibraryManager from "@/components/TaskLibraryManager";
-import SyncManager from "@/components/SyncManager";
 import { User, LibraryPermission, PermissionRequest, TagLibrary, Tag } from "@/types/permissions";
 
 export interface TaskLibrary {
@@ -15,6 +14,7 @@ export interface TaskLibrary {
   connectedTagLibraryId?: string;
   tagMappings: Record<string, string>;
   createdAt: Date;
+  createdBy: string;
 }
 
 // 创建示例数据
@@ -233,7 +233,8 @@ const createSampleData = (): {
         "category_electronics": "电子产品类任务",
         "category_clothing": "服装类任务"
       },
-      createdAt: new Date("2024-01-20")
+      createdAt: new Date("2024-01-20"),
+      createdBy: "user-1"
     },
     {
       id: "task-lib-2",
@@ -245,7 +246,20 @@ const createSampleData = (): {
         "status_todo": "待开发",
         "status_progress": "开发中"
       },
-      createdAt: new Date("2024-02-25")
+      createdAt: new Date("2024-02-25"),
+      createdBy: "user-1"
+    },
+    {
+      id: "task-lib-3",
+      name: "营销团队任务库",
+      description: "营销活动和推广任务管理",
+      connectedTagLibraryId: "tag-lib-3",
+      tagMappings: {
+        "content_business": "商业营销",
+        "content_tech": "技术营销"
+      },
+      createdAt: new Date("2024-03-01"),
+      createdBy: "user-2"
     }
   ];
 
@@ -290,7 +304,7 @@ const Index = () => {
         </header>
 
         <Tabs defaultValue="tag-libraries" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="tag-libraries" className="flex items-center gap-2">
               <Tags className="w-4 h-4" />
               标签库管理
@@ -298,10 +312,6 @@ const Index = () => {
             <TabsTrigger value="task-libraries" className="flex items-center gap-2">
               <List className="w-4 h-4" />
               任务库管理
-            </TabsTrigger>
-            <TabsTrigger value="sync-management" className="flex items-center gap-2">
-              <RefreshCw className="w-4 h-4" />
-              同步映射
             </TabsTrigger>
           </TabsList>
 
@@ -338,7 +348,7 @@ const Index = () => {
                   任务库管理
                 </CardTitle>
                 <CardDescription>
-                  管理任务库并配置标签库关联
+                  管理任务库、配置标签库关联和同步映射
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -346,27 +356,8 @@ const Index = () => {
                   taskLibraries={taskLibraries}
                   setTaskLibraries={setTaskLibraries}
                   tagLibraries={tagLibraries}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="sync-management">
-            <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <RefreshCw className="w-5 h-5 text-green-600" />
-                  同步映射管理
-                </CardTitle>
-                <CardDescription>
-                  配置标签库与任务库之间的同步映射关系
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <SyncManager 
-                  tagLibraries={tagLibraries}
-                  taskLibraries={taskLibraries}
-                  setTaskLibraries={setTaskLibraries}
+                  currentUser={currentUser}
+                  permissions={permissions}
                 />
               </CardContent>
             </Card>
