@@ -266,7 +266,7 @@ const TagFieldMapping = ({ tags, mappings, onUpdateMappings }: TagFieldMappingPr
         <CardContent>
           <div className="space-y-4">
             {mappings.map((mapping) => {
-              const tag = tags.find(t => t.tagId === mapping.tagId);
+              const tag = tags.find(t => t.id === mapping.tagId);
               const sourceFieldLabel = sourceFieldOptions.find(o => o.value === mapping.sourceField)?.label;
               
               return (

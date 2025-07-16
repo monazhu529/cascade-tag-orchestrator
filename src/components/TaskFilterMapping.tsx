@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Filter, Plus, Edit, Trash2, ArrowRight, Sync, Settings } from "lucide-react";
+import { Filter, Plus, Edit, Trash2, ArrowRight, RotateCcw, Settings } from "lucide-react";
 import { TaskLibrary } from "@/pages/Index";
 import { TagLibrary } from "@/types/permissions";
 import { useToast } from "@/hooks/use-toast";
@@ -125,7 +125,7 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
       <Tabs defaultValue="sync" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="sync" className="flex items-center gap-2">
-            <Sync className="w-4 h-4" />
+            <RotateCcw className="w-4 h-4" />
             同步配置
           </TabsTrigger>
           <TabsTrigger value="mapping" className="flex items-center gap-2">
@@ -207,7 +207,7 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
                   <p className="text-sm text-gray-500">{syncConfig.lastSyncTime}</p>
                 </div>
                 <Button onClick={handleSyncNow} className="bg-gradient-to-r from-blue-600 to-purple-600">
-                  <Sync className="w-4 h-4 mr-2" />
+                  <RotateCcw className="w-4 h-4 mr-2" />
                   立即同步
                 </Button>
               </div>

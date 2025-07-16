@@ -13,8 +13,16 @@ import { TagLibrary } from "@/types/permissions";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Link, Unlink, Settings } from "lucide-react";
 
+interface ExtendedTaskLibrary extends TaskLibrary {
+  type?: string;
+  isPublic?: boolean;
+  totalTasks?: number;
+  activeTasks?: number;
+  userCount?: number;
+}
+
 interface TaskBasicInfoProps {
-  taskLibrary: TaskLibrary;
+  taskLibrary: ExtendedTaskLibrary;
   setTaskLibraries: React.Dispatch<React.SetStateAction<TaskLibrary[]>>;
   tagLibraries: TagLibrary[];
   connectedTagLibrary?: TagLibrary;
@@ -27,7 +35,7 @@ const TaskBasicInfo = ({
   tagLibraries, 
   connectedTagLibrary 
 }: TaskBasicInfoProps) => {
-  const [editedLibrary, setEditedLibrary] = useState(taskLibrary);
+  const [editedLibrary, setEditedLibrary] = useState<ExtendedTaskLibrary>(taskLibrary);
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
 
@@ -123,7 +131,7 @@ const TaskBasicInfo = ({
             <div>
               <Label>类型</Label>
               <Select 
-                value={editedLibrary.type} 
+                value={editedLibrary.type || "standard"} 
                 onValueChange={(value) => setEditedLibrary({...editedLibrary, type: value})}
                 disabled={!isEditing}
               >
@@ -155,7 +163,7 @@ const TaskBasicInfo = ({
               <p className="text-sm text-gray-500">允许其他用户查看此任务库</p>
             </div>
             <Switch 
-              checked={editedLibrary.isPublic}
+              checked={editedLibrary.isPublic || false}
               onCheckedChange={togglePublicAccess}
               disabled={!isEditing}
             />
@@ -210,7 +218,7 @@ const TaskBasicInfo = ({
                       <div>
                         <p className="font-medium">{tagLib.name}</p>
                         <p className="text-sm text-gray-500">
-                          {tagLib.tags?.length || 0} 个标签 • 创建于 {tagLib.createdAt}
+                          {tagLib.tags?.length || 0} 个标签 • 创建于 {tagLib.createdAt.toLocaleDateString()}
                         </p>
                       </div>
                       <Button 
