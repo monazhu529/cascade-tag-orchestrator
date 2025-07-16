@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -301,7 +300,7 @@ const TaskSubscriptionManagement = ({ taskLibrary }: TaskSubscriptionManagementP
             <p className="text-gray-500 text-center">
               {searchTerm || filterType !== "all" ? "没有找到符合条件的订阅" : "还没有用户订阅此任务库"}
               <br />
-              {!searchTerm && filterType === "all" && "点击"添加订阅"邀请用户订阅通知"}
+              {!searchTerm && filterType === "all" && "点击 \"添加订阅\" 邀请用户订阅通知"}
             </p>
           </CardContent>
         </Card>
