@@ -35,6 +35,16 @@ export interface LibraryPermission {
   grantedBy: string;
 }
 
+export interface TaskLibraryPermission {
+  id: string;
+  userId: string;
+  userName: string;
+  taskLibraryId: string;
+  role: "manager" | "operator"; // 管理员和运营员
+  grantedAt: Date;
+  grantedBy: string;
+}
+
 export interface PermissionRequest {
   id: string;
   userId: string;
@@ -45,4 +55,21 @@ export interface PermissionRequest {
   requestedAt: Date;
   reviewedAt?: Date;
   reviewedBy?: string;
+}
+
+export interface SyncConfig {
+  id: string;
+  taskLibraryId: string;
+  tagLibraryId: string;
+  syncLevels: {
+    [level: number]: {
+      enabled: boolean;
+      fields: {
+        [field: string]: boolean;
+      };
+    };
+  };
+  autoSync: boolean;
+  syncFrequency: 'realtime' | 'hourly' | 'daily' | 'weekly';
+  lastSyncTime?: string;
 }

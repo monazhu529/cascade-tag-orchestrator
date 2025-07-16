@@ -44,6 +44,19 @@ const TaskLibraryDetail = ({
     [taskLibrary, tagLibraries]
   );
 
+  // Mock task library permissions
+  const taskLibraryPermissions = [
+    {
+      id: "1",
+      userId: "user-1",
+      userName: "张三",
+      taskLibraryId: taskLibrary?.id || '',
+      role: "manager" as const,
+      grantedAt: new Date("2024-01-15"),
+      grantedBy: "system"
+    }
+  ];
+
   if (!taskLibrary) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -134,7 +147,7 @@ const TaskLibraryDetail = ({
                   <TaskPermissionManagement 
                     taskLibrary={taskLibrary}
                     currentUser={currentUser}
-                    permissions={permissions}
+                    permissions={taskLibraryPermissions}
                   />
                 </TabsContent>
 

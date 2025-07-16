@@ -6,30 +6,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Plus, Shield, UserCheck, UserX, Crown } from "lucide-react";
+import { Users, Plus, Settings, UserCheck, UserX, Crown } from "lucide-react";
 import { TaskLibrary } from "@/pages/Index";
-import { User, LibraryPermission } from "@/types/permissions";
+import { User, TaskLibraryPermission } from "@/types/permissions";
 import { useToast } from "@/hooks/use-toast";
 
 interface TaskPermissionManagementProps {
   taskLibrary: TaskLibrary;
   currentUser: User;
-  permissions: LibraryPermission[];
+  permissions: TaskLibraryPermission[];
 }
 
-const TaskPermissionManagement = ({ taskLibrary, currentUser }: TaskPermissionManagementProps) => {
+const TaskPermissionManagement = ({ taskLibrary, currentUser, permissions }: TaskPermissionManagementProps) => {
   const [isGrantDialogOpen, setIsGrantDialogOpen] = useState(false);
   const [newPermission, setNewPermission] = useState({
     userId: "",
-    role: "viewer" as "administrator" | "operator" | "viewer"
+    role: "operator" as "manager" | "operator"
   });
 
-  const [taskPermissions] = useState([
+  const [taskPermissions] = useState<TaskLibraryPermission[]>([
     {
       id: "1",
       userId: "user-1",
       userName: "张三",
-      role: "administrator",
+      taskLibraryId: taskLibrary.id,
+      role: "manager",
       grantedAt: new Date("2024-01-15"),
       grantedBy: "system"
     },
@@ -37,16 +38,9 @@ const TaskPermissionManagement = ({ taskLibrary, currentUser }: TaskPermissionMa
       id: "2",
       userId: "user-2",
       userName: "李四",
+      taskLibraryId: taskLibrary.id,
       role: "operator",
       grantedAt: new Date("2024-02-01"),
-      grantedBy: "user-1"
-    },
-    {
-      id: "3",
-      userId: "user-3",
-      userName: "王五",
-      role: "viewer",
-      grantedAt: new Date("2024-02-15"),
       grantedBy: "user-1"
     }
   ]);
@@ -55,35 +49,39 @@ const TaskPermissionManagement = ({ taskLibrary, currentUser }: TaskPermissionMa
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case "administrator": return <Crown className="w-4 h-4" />;
+      case "manager": return <Crown className="w-4 h-4" />;
       case "operator": return <UserCheck className="w-4 h-4" />;
-      case "viewer": return <Shield className="w-4 h-4" />;
-      default: return <Shield className="w-4 h-4" />;
+      default: return <UserCheck className="w-4 h-4" />;
     }
   };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
-      case "administrator": return "default";
+      case "manager": return "default";
       case "operator": return "secondary";
-      case "viewer": return "outline";
       default: return "outline";
     }
   };
 
   const getRoleText = (role: string) => {
     switch (role) {
-      case "administrator": return "管理员";
-      case "operator": return "操作员";
-      case "viewer": return "查看者";
+      case "manager": return "管理员";
+      case "operator": return "运营员";
       default: return role;
     }
   };
 
+  const getRoleDescription = (role: string) => {
+    switch (role) {
+      case "manager": return "可以管理权限、删除用户、完全控制任务库";
+      case "operator": return "可以筛选映射标签、导入导出数据、管理任务";
+      default: return "";
+    }
+  };
+
   const handleGrantPermission = () => {
-    // 这里应该添加授权逻辑
     setIsGrantDialogOpen(false);
-    setNewPermission({ userId: "", role: "viewer" });
+    setNewPermission({ userId: "", role: "operator" });
     toast({
       title: "权限授予成功",
       description: "用户权限已成功添加",
@@ -97,58 +95,74 @@ const TaskPermissionManagement = ({ taskLibrary, currentUser }: TaskPermissionMa
     });
   };
 
+  const canManagePermissions = () => {
+    const userPermission = taskPermissions.find(p => p.userId === currentUser.id);
+    return userPermission?.role === "manager";
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold">权限管理</h3>
           <p className="text-sm text-gray-500">
-            管理任务库的用户访问权限
+            管理任务库的用户访问权限和角色分配
           </p>
         </div>
-        <Dialog open={isGrantDialogOpen} onOpenChange={setIsGrantDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-              <Plus className="w-4 h-4 mr-2" />
-              授予权限
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>授予任务库权限</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">用户</label>
-                <Input
-                  placeholder="输入用户名或邮箱"
-                  value={newPermission.userId}
-                  onChange={(e) => setNewPermission(prev => ({ ...prev, userId: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">权限角色</label>
-                <Select value={newPermission.role} onValueChange={(value: any) => setNewPermission(prev => ({ ...prev, role: value }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="administrator">管理员 - 完全控制权限</SelectItem>
-                    <SelectItem value="operator">操作员 - 可编辑任务和映射</SelectItem>
-                    <SelectItem value="viewer">查看者 - 仅查看权限</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={handleGrantPermission} className="w-full">
+        {canManagePermissions() && (
+          <Dialog open={isGrantDialogOpen} onOpenChange={setIsGrantDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                <Plus className="w-4 h-4 mr-2" />
                 授予权限
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>授予任务库权限</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">用户</label>
+                  <Input
+                    placeholder="输入用户名或邮箱"
+                    value={newPermission.userId}
+                    onChange={(e) => setNewPermission(prev => ({ ...prev, userId: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">权限角色</label>
+                  <Select value={newPermission.role} onValueChange={(value: any) => setNewPermission(prev => ({ ...prev, role: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manager">
+                        <div>
+                          <div className="font-medium">管理员</div>
+                          <div className="text-sm text-gray-500">可以管理权限、删除用户、完全控制任务库</div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="operator">
+                        <div>
+                          <div className="font-medium">运营员</div>
+                          <div className="text-sm text-gray-500">可以筛选映射标签、导入导出数据、管理任务</div>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={handleGrantPermission} className="w-full">
+                  授予权限
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* 权限统计 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
@@ -165,7 +179,7 @@ const TaskPermissionManagement = ({ taskLibrary, currentUser }: TaskPermissionMa
               <span className="text-sm font-medium">管理员</span>
             </div>
             <p className="text-2xl font-bold mt-2 text-purple-600">
-              {taskPermissions.filter(p => p.role === "administrator").length}
+              {taskPermissions.filter(p => p.role === "manager").length}
             </p>
           </CardContent>
         </Card>
@@ -173,21 +187,10 @@ const TaskPermissionManagement = ({ taskLibrary, currentUser }: TaskPermissionMa
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-green-600" />
-              <span className="text-sm font-medium">操作员</span>
+              <span className="text-sm font-medium">运营员</span>
             </div>
             <p className="text-2xl font-bold mt-2 text-green-600">
               {taskPermissions.filter(p => p.role === "operator").length}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-gray-600" />
-              <span className="text-sm font-medium">查看者</span>
-            </div>
-            <p className="text-2xl font-bold mt-2 text-gray-600">
-              {taskPermissions.filter(p => p.role === "viewer").length}
             </p>
           </CardContent>
         </Card>
@@ -204,10 +207,13 @@ const TaskPermissionManagement = ({ taskLibrary, currentUser }: TaskPermissionMa
                     <p className="font-medium">{permission.userName}</p>
                     <p className="text-sm text-gray-500">ID: {permission.userId}</p>
                   </div>
-                  <Badge variant={getRoleBadgeVariant(permission.role)} className="flex items-center gap-1">
-                    {getRoleIcon(permission.role)}
-                    {getRoleText(permission.role)}
-                  </Badge>
+                  <div className="flex flex-col gap-1">
+                    <Badge variant={getRoleBadgeVariant(permission.role)} className="flex items-center gap-1">
+                      {getRoleIcon(permission.role)}
+                      {getRoleText(permission.role)}
+                    </Badge>
+                    <p className="text-xs text-gray-500">{getRoleDescription(permission.role)}</p>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -215,7 +221,7 @@ const TaskPermissionManagement = ({ taskLibrary, currentUser }: TaskPermissionMa
                     <p>授权时间: {permission.grantedAt.toLocaleDateString()}</p>
                     <p>授权人: {permission.grantedBy}</p>
                   </div>
-                  {permission.role !== "administrator" && (
+                  {canManagePermissions() && permission.role !== "manager" && (
                     <Button 
                       variant="outline" 
                       size="sm"
