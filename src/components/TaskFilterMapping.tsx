@@ -6,11 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RotateCcw, Settings, ChevronRight, ChevronDown } from "lucide-react";
+import { RotateCcw, Settings, Filter } from "lucide-react";
 import { TaskLibrary } from "@/pages/Index";
 import { TagLibrary, SyncConfig } from "@/types/permissions";
 import { useToast } from "@/hooks/use-toast";
 import TaskFieldMapping from "./TaskFieldMapping";
+import SyncTagTree from "./SyncTagTree";
 
 interface TaskFilterMappingProps {
   taskLibrary: TaskLibrary;
@@ -58,27 +59,13 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
         }
       }
     },
+    tagSyncSettings: {},
     autoSync: true,
     syncFrequency: 'daily',
     lastSyncTime: '2024-01-15 10:30:00'
   });
 
-  const [expandedLevels, setExpandedLevels] = useState<{[key: number]: boolean}>({
-    1: true,
-    2: true,
-    3: false
-  });
-
   const { toast } = useToast();
-
-  const fieldLabels = {
-    key: '标签键',
-    name: '标签名',
-    value: '标签值',
-    status: '状态',
-    remark: '备注',
-    level: '级别'
-  };
 
   const handleSyncNow = () => {
     toast({
@@ -95,42 +82,6 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
         description: "已成功同步标签库数据",
       });
     }, 2000);
-  };
-
-  const toggleLevel = (level: number) => {
-    setSyncConfig(prev => ({
-      ...prev,
-      syncLevels: {
-        ...prev.syncLevels,
-        [level]: {
-          ...prev.syncLevels[level],
-          enabled: !prev.syncLevels[level].enabled
-        }
-      }
-    }));
-  };
-
-  const toggleField = (level: number, field: string) => {
-    setSyncConfig(prev => ({
-      ...prev,
-      syncLevels: {
-        ...prev.syncLevels,
-        [level]: {
-          ...prev.syncLevels[level],
-          fields: {
-            ...prev.syncLevels[level].fields,
-            [field]: !prev.syncLevels[level].fields[field]
-          }
-        }
-      }
-    }));
-  };
-
-  const toggleLevelExpanded = (level: number) => {
-    setExpandedLevels(prev => ({
-      ...prev,
-      [level]: !prev[level]
-    }));
   };
 
   if (!connectedTagLibrary) {
@@ -165,7 +116,7 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
             同步配置
           </TabsTrigger>
           <TabsTrigger value="mapping" className="flex items-center gap-2">
-            <Settings className="w-4 h-4" />
+            <Filter className="w-4 h-4" />
             字段映射
           </TabsTrigger>
         </TabsList>
@@ -224,61 +175,20 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
             </CardContent>
           </Card>
 
-          {/* 详细同步配置 */}
+          {/* 详细同步配置 - 使用标签库树状结构 */}
           <Card>
             <CardHeader>
               <CardTitle>详细同步配置</CardTitle>
               <CardDescription>
-                配置每个级别的标签和字段是否同步
+                按标签库树状结构配置每个标签的同步设置
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[1, 2, 3].map((level) => (
-                  <div key={level} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleLevelExpanded(level)}
-                          className="p-0 w-6 h-6"
-                        >
-                          {expandedLevels[level] ? (
-                            <ChevronDown className="w-4 h-4" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4" />
-                          )}
-                        </Button>
-                        <span className="font-medium">第{level}级标签</span>
-                      </div>
-                      <Switch
-                        checked={syncConfig.syncLevels[level]?.enabled || false}
-                        onCheckedChange={() => toggleLevel(level)}
-                      />
-                    </div>
-                    
-                    {expandedLevels[level] && syncConfig.syncLevels[level]?.enabled && (
-                      <div className="ml-6 space-y-2">
-                        <p className="text-sm text-gray-600 mb-2">选择要同步的字段：</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Object.entries(fieldLabels).map(([field, label]) => (
-                            <label key={field} className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={syncConfig.syncLevels[level]?.fields[field] || false}
-                                onChange={() => toggleField(level, field)}
-                                className="rounded"
-                              />
-                              <span className="text-sm">{label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <SyncTagTree 
+                tags={connectedTagLibrary.tags || []}
+                syncConfig={syncConfig}
+                onUpdateSyncConfig={setSyncConfig}
+              />
             </CardContent>
           </Card>
 
@@ -288,10 +198,10 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm font-medium">启用级别</span>
+                  <span className="text-sm font-medium">启用标签</span>
                 </div>
                 <p className="text-2xl font-bold mt-2">
-                  {Object.values(syncConfig.syncLevels).filter(level => level.enabled).length}
+                  {Object.values(syncConfig.tagSyncSettings || {}).filter((setting: any) => setting.enabled).length}
                 </p>
               </CardContent>
             </Card>
@@ -302,8 +212,8 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
                   <span className="text-sm font-medium">同步字段</span>
                 </div>
                 <p className="text-2xl font-bold mt-2 text-green-600">
-                  {Object.values(syncConfig.syncLevels).reduce((total, level) => {
-                    return total + (level.enabled ? Object.values(level.fields).filter(Boolean).length : 0);
+                  {Object.values(syncConfig.tagSyncSettings || {}).reduce((total: number, setting: any) => {
+                    return total + (setting.enabled ? Object.values(setting.fields).filter(Boolean).length : 0);
                   }, 0)}
                 </p>
               </CardContent>
@@ -312,7 +222,7 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  <span className="text-sm font-medium">已同步标签</span>
+                  <span className="text-sm font-medium">总标签数</span>
                 </div>
                 <p className="text-2xl font-bold mt-2 text-orange-600">
                   {connectedTagLibrary.tags?.length || 0}
