@@ -147,7 +147,7 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
                   <Label>同步频率</Label>
                   <Select 
                     value={syncConfig.syncFrequency} 
-                    onValueChange={(value: any) => setSyncConfig(prev => ({...prev, syncFrequency: value}))}
+                    onValueChange={(value: 'realtime' | 'hourly' | 'daily' | 'weekly') => setSyncConfig(prev => ({...prev, syncFrequency: value}))}
                   >
                     <SelectTrigger className="w-48">
                       <SelectValue />
@@ -201,7 +201,7 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
                   <span className="text-sm font-medium">启用标签</span>
                 </div>
                 <p className="text-2xl font-bold mt-2">
-                  {Object.values(syncConfig.tagSyncSettings || {}).filter((setting: any) => setting.enabled).length}
+                  {Object.values(syncConfig.tagSyncSettings || {}).filter(setting => setting.enabled).length}
                 </p>
               </CardContent>
             </Card>
@@ -212,7 +212,7 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
                   <span className="text-sm font-medium">同步字段</span>
                 </div>
                 <p className="text-2xl font-bold mt-2 text-green-600">
-                  {Object.values(syncConfig.tagSyncSettings || {}).reduce((total: number, setting: any) => {
+                  {Object.values(syncConfig.tagSyncSettings || {}).reduce((total: number, setting) => {
                     return total + (setting.enabled ? Object.values(setting.fields).filter(Boolean).length : 0);
                   }, 0)}
                 </p>

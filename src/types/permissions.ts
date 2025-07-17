@@ -57,6 +57,13 @@ export interface PermissionRequest {
   reviewedBy?: string;
 }
 
+export interface TagSyncSettings {
+  enabled: boolean;
+  fields: {
+    [field: string]: boolean;
+  };
+}
+
 export interface SyncConfig {
   id: string;
   taskLibraryId: string;
@@ -68,6 +75,9 @@ export interface SyncConfig {
         [field: string]: boolean;
       };
     };
+  };
+  tagSyncSettings?: {
+    [tagId: string]: TagSyncSettings;
   };
   autoSync: boolean;
   syncFrequency: 'realtime' | 'hourly' | 'daily' | 'weekly';
