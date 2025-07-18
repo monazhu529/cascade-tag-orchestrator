@@ -4,14 +4,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Settings, Filter, Users, Clock, Bell } from "lucide-react";
+import { ArrowLeft, Settings, Filter, Users, Clock } from "lucide-react";
 import { TaskLibrary } from "@/pages/Index";
 import { TagLibrary, User, LibraryPermission } from "@/types/permissions";
 import TaskBasicInfo from "./TaskBasicInfo";
 import TaskFilterMapping from "./TaskFilterMapping";
 import TaskPermissionManagement from "./TaskPermissionManagement";
 import TaskOperationLog from "./TaskOperationLog";
-import TaskSubscriptionManagement from "./TaskSubscriptionManagement";
 
 interface TaskLibraryDetailProps {
   taskLibraries: TaskLibrary[];
@@ -101,7 +100,7 @@ const TaskLibraryDetail = ({
         <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
           <CardContent className="p-0">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-5 mb-0 rounded-t-lg rounded-b-none">
+              <TabsList className="grid w-full grid-cols-4 mb-0 rounded-t-lg rounded-b-none">
                 <TabsTrigger value="basic" className="flex items-center gap-2">
                   <Settings className="w-4 h-4" />
                   基础信息
@@ -117,10 +116,6 @@ const TaskLibraryDetail = ({
                 <TabsTrigger value="logs" className="flex items-center gap-2">
                   <Clock className="w-4 h-4" />
                   操作日志
-                </TabsTrigger>
-                <TabsTrigger value="subscriptions" className="flex items-center gap-2">
-                  <Bell className="w-4 h-4" />
-                  订阅管理
                 </TabsTrigger>
               </TabsList>
 
@@ -153,13 +148,6 @@ const TaskLibraryDetail = ({
 
                 <TabsContent value="logs" className="mt-0">
                   <TaskOperationLog 
-                    taskLibrary={taskLibrary}
-                    currentUser={currentUser}
-                  />
-                </TabsContent>
-
-                <TabsContent value="subscriptions" className="mt-0">
-                  <TaskSubscriptionManagement 
                     taskLibrary={taskLibrary}
                     currentUser={currentUser}
                   />
