@@ -6,12 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RotateCcw, Settings, Filter } from "lucide-react";
+import { RotateCcw, Settings } from "lucide-react";
 import { TaskLibrary } from "@/pages/Index";
 import { TagLibrary, SyncConfig } from "@/types/permissions";
 import { useToast } from "@/hooks/use-toast";
-import TaskFieldMapping from "./TaskFieldMapping";
-import SyncTagTree from "./SyncTagTree";
+import UnifiedTagMapping from "./UnifiedTagMapping";
 
 interface TaskFilterMappingProps {
   taskLibrary: TaskLibrary;
@@ -109,136 +108,104 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibrary }: TaskFilterMappi
         </div>
       </div>
 
-      <Tabs defaultValue="sync" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="sync" className="flex items-center gap-2">
-            <RotateCcw className="w-4 h-4" />
-            同步配置
-          </TabsTrigger>
-          <TabsTrigger value="mapping" className="flex items-center gap-2">
-            <Filter className="w-4 h-4" />
-            字段映射
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="sync" className="space-y-6">
-          {/* 基本同步设置 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>基本设置</CardTitle>
-              <CardDescription>
-                配置从标签库"{connectedTagLibrary.name}"的同步规则
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base font-medium">自动同步</Label>
-                  <p className="text-sm text-gray-500">启用后将根据设定频率自动同步标签库数据</p>
-                </div>
-                <Switch 
-                  checked={syncConfig.autoSync}
-                  onCheckedChange={(checked) => setSyncConfig(prev => ({...prev, autoSync: checked}))}
-                />
-              </div>
-
-              {syncConfig.autoSync && (
-                <div className="space-y-2">
-                  <Label>同步频率</Label>
-                  <Select 
-                    value={syncConfig.syncFrequency} 
-                    onValueChange={(value: 'realtime' | 'hourly' | 'daily' | 'weekly') => setSyncConfig(prev => ({...prev, syncFrequency: value}))}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="realtime">实时同步</SelectItem>
-                      <SelectItem value="hourly">每小时</SelectItem>
-                      <SelectItem value="daily">每日</SelectItem>
-                      <SelectItem value="weekly">每周</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div>
-                  <p className="text-sm font-medium">上次同步时间</p>
-                  <p className="text-sm text-gray-500">{syncConfig.lastSyncTime}</p>
-                </div>
-                <Button onClick={handleSyncNow} className="bg-gradient-to-r from-blue-600 to-purple-600">
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  立即同步
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 详细同步配置 - 使用标签库树状结构 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>详细同步配置</CardTitle>
-              <CardDescription>
-                按标签库树状结构配置每个标签的同步设置
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SyncTagTree 
-                tags={connectedTagLibrary.tags || []}
-                syncConfig={syncConfig}
-                onUpdateSyncConfig={setSyncConfig}
-              />
-            </CardContent>
-          </Card>
-
-          {/* 同步统计 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm font-medium">启用标签</span>
-                </div>
-                <p className="text-2xl font-bold mt-2">
-                  {Object.values(syncConfig.tagSyncSettings || {}).filter(setting => setting.enabled).length}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm font-medium">同步字段</span>
-                </div>
-                <p className="text-2xl font-bold mt-2 text-green-600">
-                  {Object.values(syncConfig.tagSyncSettings || {}).reduce((total: number, setting) => {
-                    return total + (setting.enabled ? Object.values(setting.fields).filter(Boolean).length : 0);
-                  }, 0)}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  <span className="text-sm font-medium">总标签数</span>
-                </div>
-                <p className="text-2xl font-bold mt-2 text-orange-600">
-                  {connectedTagLibrary.tags?.length || 0}
-                </p>
-              </CardContent>
-            </Card>
+      {/* 基本同步设置 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>基本设置</CardTitle>
+          <CardDescription>
+            配置从标签库"{connectedTagLibrary.name}"的同步规则
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-base font-medium">自动同步</Label>
+              <p className="text-sm text-gray-500">启用后将根据设定频率自动同步标签库数据</p>
+            </div>
+            <Switch 
+              checked={syncConfig.autoSync}
+              onCheckedChange={(checked) => setSyncConfig(prev => ({...prev, autoSync: checked}))}
+            />
           </div>
-        </TabsContent>
 
-        <TabsContent value="mapping" className="space-y-6">
-          <TaskFieldMapping 
-            taskLibrary={taskLibrary}
-            connectedTagLibrary={connectedTagLibrary}
-          />
-        </TabsContent>
-      </Tabs>
+          {syncConfig.autoSync && (
+            <div className="space-y-2">
+              <Label>同步频率</Label>
+              <Select 
+                value={syncConfig.syncFrequency} 
+                onValueChange={(value: 'realtime' | 'hourly' | 'daily' | 'weekly') => setSyncConfig(prev => ({...prev, syncFrequency: value}))}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="realtime">实时同步</SelectItem>
+                  <SelectItem value="hourly">每小时</SelectItem>
+                  <SelectItem value="daily">每日</SelectItem>
+                  <SelectItem value="weekly">每周</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-4 border-t">
+            <div>
+              <p className="text-sm font-medium">上次同步时间</p>
+              <p className="text-sm text-gray-500">{syncConfig.lastSyncTime}</p>
+            </div>
+            <Button onClick={handleSyncNow} className="bg-gradient-to-r from-blue-600 to-purple-600">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              立即同步
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 统一的标签映射和同步配置 */}
+      <UnifiedTagMapping 
+        tags={connectedTagLibrary.tags || []}
+        syncConfig={syncConfig}
+        onUpdateSyncConfig={setSyncConfig}
+      />
+
+      {/* 同步统计 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-sm font-medium">启用同步</span>
+            </div>
+            <p className="text-2xl font-bold mt-2">
+              {Object.values(syncConfig.tagSyncSettings || {}).filter((setting: any) => setting.enabled).length}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm font-medium">同步字段</span>
+            </div>
+            <p className="text-2xl font-bold mt-2 text-green-600">
+              {Object.values(syncConfig.tagSyncSettings || {}).reduce((total: number, setting: any) => {
+                return total + (setting.enabled ? Object.values(setting.fields).filter(Boolean).length : 0);
+              }, 0)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <span className="text-sm font-medium">总标签数</span>
+            </div>
+            <p className="text-2xl font-bold mt-2 text-orange-600">
+              {connectedTagLibrary.tags?.length || 0}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
