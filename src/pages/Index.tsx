@@ -1,10 +1,11 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Database, Tag as TagIcon, FileText } from "lucide-react";
 import TagLibraryManager from "@/components/TagLibraryManager";
 import TaskLibraryManager from "@/components/TaskLibraryManager";
-import { TagLibrary, Tag, User } from "@/types/permissions";
+import { TagLibrary, Tag, User, LibraryPermission, PermissionRequest } from "@/types/permissions";
 
 export interface TaskLibrary {
   id: string;
@@ -12,7 +13,9 @@ export interface TaskLibrary {
   description: string;
   administrator: string;
   connectedTagLibraryId?: string;
+  tagMappings: { [key: string]: string };
   createdAt: Date;
+  createdBy: string;
 }
 
 const Index = () => {
@@ -445,7 +448,9 @@ const Index = () => {
       description: "电商平台产品信息管理任务库",
       administrator: "张三",
       connectedTagLibraryId: "lib-1",
-      createdAt: new Date("2024-01-15")
+      tagMappings: {},
+      createdAt: new Date("2024-01-15"),
+      createdBy: "user-1"
     },
     {
       id: "task-2", 
@@ -453,16 +458,41 @@ const Index = () => {
       description: "按地区进行销售数据分析的任务库",
       administrator: "李四",
       connectedTagLibraryId: "lib-2",
-      createdAt: new Date("2024-01-20")
+      tagMappings: {},
+      createdAt: new Date("2024-01-20"),
+      createdBy: "user-2"
     },
     {
       id: "task-3",
       name: "客户服务管理",
       description: "客户服务流程管理任务库",
       administrator: "王五",
-      createdAt: new Date("2024-01-25")
+      tagMappings: {},
+      createdAt: new Date("2024-01-25"),
+      createdBy: "user-3"
     }
   ]);
+
+  // Add permissions state for TagLibraryManager
+  const [permissions, setPermissions] = useState<LibraryPermission[]>([
+    {
+      userId: "user-1",
+      libraryId: "lib-1",
+      role: "administrator",
+      grantedAt: new Date("2024-01-15"),
+      grantedBy: "system"
+    },
+    {
+      userId: "user-1",
+      libraryId: "lib-2",
+      role: "operator",
+      grantedAt: new Date("2024-01-20"),
+      grantedBy: "system"
+    }
+  ]);
+
+  // Add permission requests state for TagLibraryManager
+  const [permissionRequests, setPermissionRequests] = useState<PermissionRequest[]>([]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -493,6 +523,10 @@ const Index = () => {
                 tagLibraries={tagLibraries}
                 setTagLibraries={setTagLibraries}
                 currentUser={currentUser}
+                permissions={permissions}
+                setPermissions={setPermissions}
+                permissionRequests={permissionRequests}
+                setPermissionRequests={setPermissionRequests}
               />
             </CardContent>
           </Card>
@@ -514,6 +548,7 @@ const Index = () => {
                 setTaskLibraries={setTaskLibraries}
                 tagLibraries={tagLibraries}
                 currentUser={currentUser}
+                permissions={permissions}
               />
             </CardContent>
           </Card>

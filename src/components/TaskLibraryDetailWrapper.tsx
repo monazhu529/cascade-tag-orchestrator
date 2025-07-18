@@ -17,6 +17,7 @@ const TaskLibraryDetailWrapper = () => {
       id: "task-lib-1",
       name: "电商平台任务库",
       description: "管理电商平台的各类任务和工作流",
+      administrator: "张三",
       connectedTagLibraryId: "tag-lib-1",
       tagMappings: {
         "category_electronics": "电子产品类任务",
@@ -29,6 +30,7 @@ const TaskLibraryDetailWrapper = () => {
       id: "task-lib-2",
       name: "开发团队任务库",
       description: "软件开发团队的项目任务管理",
+      administrator: "李四",
       connectedTagLibraryId: "tag-lib-2",
       tagMappings: {
         "priority_high": "紧急任务",
@@ -36,7 +38,7 @@ const TaskLibraryDetailWrapper = () => {
         "status_progress": "开发中"
       },
       createdAt: new Date("2024-02-25"),
-      createdBy: "user-1"
+      createdBy: "user-2"
     }
   ]);
 
