@@ -99,6 +99,7 @@ const TaskLibraryManager = ({
       id: crypto.randomUUID(),
       name: newTaskLibrary.name,
       description: newTaskLibrary.description,
+      administrator: currentUser.name,
       connectedTagLibraryId: newTaskLibrary.connectedTagLibraryId === "none" ? undefined : newTaskLibrary.connectedTagLibraryId || undefined,
       tagMappings: {},
       createdAt: new Date(),
