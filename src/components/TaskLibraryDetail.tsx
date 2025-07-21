@@ -36,10 +36,10 @@ const TaskLibraryDetail = ({
     [taskLibraries, taskLibraryId]
   );
 
-  const connectedTagLibrary = useMemo(() => 
-    taskLibrary?.connectedTagLibraryId 
-      ? tagLibraries.find(lib => lib.id === taskLibrary.connectedTagLibraryId)
-      : undefined,
+  const connectedTagLibraries = useMemo(() => 
+    taskLibrary?.connectedTagLibraryIds 
+      ? tagLibraries.filter(lib => taskLibrary.connectedTagLibraryIds.includes(lib.id))
+      : [],
     [taskLibrary, tagLibraries]
   );
 
@@ -88,9 +88,9 @@ const TaskLibraryDetail = ({
                 {taskLibrary.name}
               </h1>
               <p className="text-gray-600 mt-2">{taskLibrary.description}</p>
-              {connectedTagLibrary && (
+              {connectedTagLibraries.length > 0 && (
                 <p className="text-sm text-green-600 mt-1">
-                  已关联标签库: {connectedTagLibrary.name}
+                  已关联 {connectedTagLibraries.length} 个标签库: {connectedTagLibraries.map(lib => lib.name).join(', ')}
                 </p>
               )}
             </div>
@@ -125,7 +125,7 @@ const TaskLibraryDetail = ({
                     taskLibrary={taskLibrary}
                     setTaskLibraries={setTaskLibraries}
                     tagLibraries={tagLibraries}
-                    connectedTagLibrary={connectedTagLibrary}
+                    connectedTagLibraries={connectedTagLibraries}
                     currentUser={currentUser}
                   />
                 </TabsContent>
@@ -133,7 +133,7 @@ const TaskLibraryDetail = ({
                 <TabsContent value="mapping" className="mt-0">
                   <TaskFilterMapping 
                     taskLibrary={taskLibrary}
-                    connectedTagLibrary={connectedTagLibrary}
+                    connectedTagLibraries={connectedTagLibraries}
                     currentUser={currentUser}
                   />
                 </TabsContent>

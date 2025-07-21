@@ -751,7 +751,7 @@ const Index = () => {
     }
   ]);
 
-  // Add permissions state for TagLibraryManager
+  // Add permissions state for TagLibraryManager - fix the invalid "viewer" role
   const [permissions, setPermissions] = useState<LibraryPermission[]>([
     {
       userId: "user-1",
@@ -770,7 +770,7 @@ const Index = () => {
     {
       userId: "user-1",
       libraryId: "lib-3",
-      role: "viewer",
+      role: "operator",
       grantedAt: new Date("2024-01-25"),
       grantedBy: "system"
     },
