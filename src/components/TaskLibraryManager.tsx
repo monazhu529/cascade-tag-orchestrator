@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, List, Link, RefreshCw, Search, Filter, Settings } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Edit, Trash2, List, Link, RefreshCw, Search, Filter, Settings, X } from "lucide-react";
 import { TaskLibrary } from "@/pages/Index";
 import { TagLibrary, User, LibraryPermission } from "@/types/permissions";
 import { useToast } from "@/hooks/use-toast";
@@ -32,7 +34,7 @@ const TaskLibraryManager = ({
   const [newTaskLibrary, setNewTaskLibrary] = useState({ 
     name: "", 
     description: "", 
-    connectedTagLibraryId: "" 
+    connectedTagLibraryIds: [] as string[]
   });
   
   // 筛选状态
@@ -78,7 +80,7 @@ const TaskLibraryManager = ({
     // 标签库筛选
     if (selectedTagLibraryFilter !== "all") {
       filtered = filtered.filter(lib => 
-        lib.connectedTagLibraryId === selectedTagLibraryFilter
+        lib.connectedTagLibraryIds.includes(selectedTagLibraryFilter)
       );
     }
 
@@ -100,14 +102,14 @@ const TaskLibraryManager = ({
       name: newTaskLibrary.name,
       description: newTaskLibrary.description,
       administrator: currentUser.name,
-      connectedTagLibraryId: newTaskLibrary.connectedTagLibraryId === "none" ? undefined : newTaskLibrary.connectedTagLibraryId || undefined,
+      connectedTagLibraryIds: newTaskLibrary.connectedTagLibraryIds,
       tagMappings: {},
       createdAt: new Date(),
       createdBy: currentUser.id,
     };
 
     setTaskLibraries(prev => [...prev, taskLibrary]);
-    setNewTaskLibrary({ name: "", description: "", connectedTagLibraryId: "" });
+    setNewTaskLibrary({ name: "", description: "", connectedTagLibraryIds: [] });
     setIsCreateDialogOpen(false);
     
     toast({
@@ -124,29 +126,28 @@ const TaskLibraryManager = ({
     });
   };
 
-  const updateTaskLibraryConnection = (taskLibraryId: string, tagLibraryId: string) => {
+  const updateTaskLibraryConnection = (taskLibraryId: string, tagLibraryIds: string[]) => {
     setTaskLibraries(prev => 
       prev.map(lib => 
         lib.id === taskLibraryId 
-          ? { ...lib, connectedTagLibraryId: tagLibraryId === "none" ? undefined : tagLibraryId, tagMappings: {} }
+          ? { ...lib, connectedTagLibraryIds: tagLibraryIds, tagMappings: {} }
           : lib
       )
     );
     
     toast({
       title: "成功",
-      description: tagLibraryId !== "none" ? "标签库连接成功" : "标签库连接已断开",
+      description: "标签库关联已更新",
     });
   };
 
   const handleSync = (taskLibraryId: string) => {
     const taskLibrary = taskLibraries.find(lib => lib.id === taskLibraryId);
-    const tagLibrary = tagLibraries.find(lib => lib.id === taskLibrary?.connectedTagLibraryId);
     
-    if (!taskLibrary || !tagLibrary) {
+    if (!taskLibrary) {
       toast({
         title: "错误",
-        description: "找不到对应的任务库或标签库",
+        description: "找不到对应的任务库",
         variant: "destructive",
       });
       return;
@@ -155,17 +156,32 @@ const TaskLibraryManager = ({
     // 模拟同步过程
     toast({
       title: "同步成功",
-      description: `${taskLibrary.name} 与 ${tagLibrary.name} 同步完成`,
+      description: `${taskLibrary.name} 同步完成`,
     });
   };
 
-  const getConnectedTagLibrary = (taskLibrary: TaskLibrary) => {
-    return taskLibrary.connectedTagLibraryId 
-      ? tagLibraries.find(lib => lib.id === taskLibrary.connectedTagLibraryId)
-      : undefined;
+  const getConnectedTagLibraries = (taskLibrary: TaskLibrary) => {
+    return taskLibrary.connectedTagLibraryIds.map(id => 
+      tagLibraries.find(lib => lib.id === id)
+    ).filter(Boolean);
   };
 
-  const connectedTaskLibraries = filteredTaskLibraries.filter(lib => lib.connectedTagLibraryId);
+  const handleTagLibraryToggle = (taskLibraryId: string, tagLibraryId: string, checked: boolean) => {
+    setTaskLibraries(prev => 
+      prev.map(lib => {
+        if (lib.id === taskLibraryId) {
+          const newConnectedIds = checked 
+            ? [...lib.connectedTagLibraryIds, tagLibraryId]
+            : lib.connectedTagLibraryIds.filter(id => id !== tagLibraryId);
+          
+          return { ...lib, connectedTagLibraryIds: newConnectedIds };
+        }
+        return lib;
+      })
+    );
+  };
+
+  const connectedTaskLibraries = filteredTaskLibraries.filter(lib => lib.connectedTagLibraryIds.length > 0);
 
   return (
     <Tabs defaultValue="management" className="w-full">
@@ -267,11 +283,11 @@ const TaskLibraryManager = ({
                 创建任务库
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>创建新任务库</DialogTitle>
                 <DialogDescription>
-                  创建一个新的任务库并可选择关联标签库
+                  创建一个新的任务库并可选择关联多个标签库
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -295,23 +311,40 @@ const TaskLibraryManager = ({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="tag-library">关联标签库 (可选)</Label>
-                  <Select 
-                    value={newTaskLibrary.connectedTagLibraryId || "none"} 
-                    onValueChange={(value) => setNewTaskLibrary(prev => ({ ...prev, connectedTagLibraryId: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="选择要关联的标签库" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">不关联标签库</SelectItem>
-                      {userAccessibleTagLibraries.map((library) => (
-                        <SelectItem key={library.id} value={library.id}>
+                  <Label>关联标签库 (可选择多个)</Label>
+                  <div className="grid grid-cols-2 gap-3 mt-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {userAccessibleTagLibraries.map((library) => (
+                      <div key={library.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={library.id}
+                          checked={newTaskLibrary.connectedTagLibraryIds.includes(library.id)}
+                          onCheckedChange={(checked) => {
+                            setNewTaskLibrary(prev => ({
+                              ...prev,
+                              connectedTagLibraryIds: checked
+                                ? [...prev.connectedTagLibraryIds, library.id]
+                                : prev.connectedTagLibraryIds.filter(id => id !== library.id)
+                            }));
+                          }}
+                        />
+                        <Label htmlFor={library.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                           {library.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                  {newTaskLibrary.connectedTagLibraryIds.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {newTaskLibrary.connectedTagLibraryIds.map(id => {
+                        const library = userAccessibleTagLibraries.find(lib => lib.id === id);
+                        return library ? (
+                          <Badge key={id} variant="secondary" className="text-xs">
+                            {library.name}
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
                 </div>
                 <Button onClick={createTaskLibrary} className="w-full">
                   创建
@@ -334,7 +367,7 @@ const TaskLibraryManager = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTaskLibraries.map((taskLibrary) => {
-              const connectedTagLibrary = getConnectedTagLibrary(taskLibrary);
+              const connectedTagLibraries = getConnectedTagLibraries(taskLibrary);
               
               return (
                 <Card key={taskLibrary.id} className="hover:shadow-lg transition-shadow bg-white/80 backdrop-blur-sm border border-gray-200">
@@ -370,48 +403,43 @@ const TaskLibraryManager = ({
                       </span>
                     </div>
                     
-                    {connectedTagLibrary ? (
+                    {connectedTagLibraries.length > 0 ? (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Link className="w-4 h-4 text-green-600" />
-                          <span className="text-sm font-medium">已关联标签库</span>
+                          <span className="text-sm font-medium">已关联 {connectedTagLibraries.length} 个标签库</span>
                         </div>
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">
-                          {connectedTagLibrary.name}
-                        </Badge>
-                        <Select
-                          value={taskLibrary.connectedTagLibraryId || "none"}
-                          onValueChange={(value) => updateTaskLibraryConnection(taskLibrary.id, value)}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">断开连接</SelectItem>
-                            {userAccessibleTagLibraries.map((library) => (
-                              <SelectItem key={library.id} value={library.id}>
-                                {library.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex flex-wrap gap-1">
+                          {connectedTagLibraries.map((tagLib) => (
+                            <Badge key={tagLib.id} variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                              {tagLib.name}
+                            </Badge>
+                          ))}
+                        </div>
                         
-                        {/* 同步配置预览 */}
+                        {/* 多标签库管理 */}
                         <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                          <h4 className="font-medium mb-2 text-sm">同步配置</h4>
-                          <div className="space-y-1 text-xs">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">同步级别:</span>
-                              <span className="font-medium">完整同步</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">自动同步:</span>
-                              <span className="font-medium text-green-600">已启用</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">映射数量:</span>
-                              <span className="font-medium">{Object.keys(taskLibrary.tagMappings).length}</span>
-                            </div>
+                          <h4 className="font-medium mb-2 text-sm">标签库管理</h4>
+                          <div className="space-y-2 max-h-32 overflow-y-auto">
+                            {userAccessibleTagLibraries.map((library) => (
+                              <div key={library.id} className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`${taskLibrary.id}-${library.id}`}
+                                    checked={taskLibrary.connectedTagLibraryIds.includes(library.id)}
+                                    onCheckedChange={(checked) => 
+                                      handleTagLibraryToggle(taskLibrary.id, library.id, checked as boolean)
+                                    }
+                                  />
+                                  <Label htmlFor={`${taskLibrary.id}-${library.id}`} className="text-xs">
+                                    {library.name}
+                                  </Label>
+                                </div>
+                                <span className="text-xs text-gray-500">
+                                  {library.tags?.length || 0} 个标签
+                                </span>
+                              </div>
+                            ))}
                           </div>
                           <Button
                             variant="outline" 
@@ -420,29 +448,29 @@ const TaskLibraryManager = ({
                             onClick={() => handleSync(taskLibrary.id)}
                           >
                             <RefreshCw className="w-3 h-3 mr-1" />
-                            立即同步
+                            同步所有标签库
                           </Button>
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         <span className="text-sm text-gray-500">未关联标签库</span>
-                        <Select
-                          value="none"
-                          onValueChange={(value) => updateTaskLibraryConnection(taskLibrary.id, value)}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="选择标签库关联" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">不关联标签库</SelectItem>
-                            {userAccessibleTagLibraries.map((library) => (
-                              <SelectItem key={library.id} value={library.id}>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {userAccessibleTagLibraries.map((library) => (
+                            <div key={library.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${taskLibrary.id}-${library.id}`}
+                                checked={false}
+                                onCheckedChange={(checked) => 
+                                  handleTagLibraryToggle(taskLibrary.id, library.id, checked as boolean)
+                                }
+                              />
+                              <Label htmlFor={`${taskLibrary.id}-${library.id}`} className="text-xs">
                                 {library.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                     

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Database, Tag as TagIcon, FileText } from "lucide-react";
 import TagLibraryManager from "@/components/TagLibraryManager";
 import TaskLibraryManager from "@/components/TaskLibraryManager";
@@ -12,8 +13,8 @@ export interface TaskLibrary {
   name: string;
   description: string;
   administrator: string;
-  connectedTagLibraryId?: string;
-  tagMappings: { [key: string]: string };
+  connectedTagLibraryIds: string[]; // 支持多个标签库关联
+  tagMappings: { [tagLibraryId: string]: { [tagId: string]: string } }; // 按标签库分组的映射
   createdAt: Date;
   createdBy: string;
 }
@@ -438,6 +439,190 @@ const Index = () => {
           parentId: "region-6"
         }
       ]
+    },
+    {
+      id: "lib-3",
+      libraryId: "103",
+      name: "状态标签库",
+      description: "任务状态和优先级管理标签体系",
+      administrator: "王五",
+      createdAt: new Date("2024-01-25"),
+      tags: [
+        // 一级标签 - 任务状态
+        {
+          id: "status-1",
+          key: "task_status",
+          name: "任务状态",
+          value: "task_status_category",
+          status: "active",
+          remark: "任务执行状态分类",
+          level: 1
+        },
+        // 二级标签 - 具体状态
+        {
+          id: "status-2",
+          key: "pending",
+          name: "待处理",
+          value: "pending_status",
+          status: "active",
+          remark: "等待处理的任务",
+          level: 2,
+          parentId: "status-1"
+        },
+        {
+          id: "status-3",
+          key: "in_progress",
+          name: "进行中",
+          value: "in_progress_status",
+          status: "active",
+          remark: "正在执行的任务",
+          level: 2,
+          parentId: "status-1"
+        },
+        {
+          id: "status-4",
+          key: "completed",
+          name: "已完成",
+          value: "completed_status",
+          status: "active",
+          remark: "已完成的任务",
+          level: 2,
+          parentId: "status-1"
+        },
+        {
+          id: "status-5",
+          key: "cancelled",
+          name: "已取消",
+          value: "cancelled_status",
+          status: "active",
+          remark: "已取消的任务",
+          level: 2,
+          parentId: "status-1"
+        },
+        // 一级标签 - 优先级
+        {
+          id: "priority-1",
+          key: "priority",
+          name: "优先级",
+          value: "priority_category",
+          status: "active",
+          remark: "任务优先级分类",
+          level: 1
+        },
+        // 二级标签 - 具体优先级
+        {
+          id: "priority-2",
+          key: "high",
+          name: "高优先级",
+          value: "high_priority",
+          status: "active",
+          remark: "紧急重要任务",
+          level: 2,
+          parentId: "priority-1"
+        },
+        {
+          id: "priority-3",
+          key: "medium",
+          name: "中优先级",
+          value: "medium_priority",
+          status: "active",
+          remark: "一般重要任务",
+          level: 2,
+          parentId: "priority-1"
+        },
+        {
+          id: "priority-4",
+          key: "low",
+          name: "低优先级",
+          value: "low_priority",
+          status: "active",
+          remark: "可延后处理任务",
+          level: 2,
+          parentId: "priority-1"
+        }
+      ]
+    },
+    {
+      id: "lib-4",
+      libraryId: "104",
+      name: "部门标签库",
+      description: "企业部门组织架构标签体系",
+      administrator: "赵六",
+      createdAt: new Date("2024-01-30"),
+      tags: [
+        // 一级标签 - 技术部
+        {
+          id: "dept-1",
+          key: "tech_dept",
+          name: "技术部",
+          value: "tech_department",
+          status: "active",
+          remark: "技术开发部门",
+          level: 1
+        },
+        // 二级标签 - 技术团队
+        {
+          id: "dept-2",
+          key: "frontend",
+          name: "前端团队",
+          value: "frontend_team",
+          status: "active",
+          remark: "前端开发团队",
+          level: 2,
+          parentId: "dept-1"
+        },
+        {
+          id: "dept-3",
+          key: "backend",
+          name: "后端团队",
+          value: "backend_team",
+          status: "active",
+          remark: "后端开发团队",
+          level: 2,
+          parentId: "dept-1"
+        },
+        {
+          id: "dept-4",
+          key: "mobile",
+          name: "移动端团队",
+          value: "mobile_team",
+          status: "active",
+          remark: "移动应用开发团队",
+          level: 2,
+          parentId: "dept-1"
+        },
+        // 一级标签 - 市场部
+        {
+          id: "dept-5",
+          key: "marketing_dept",
+          name: "市场部",
+          value: "marketing_department",
+          status: "active",
+          remark: "市场营销部门",
+          level: 1
+        },
+        // 二级标签 - 市场团队
+        {
+          id: "dept-6",
+          key: "sales",
+          name: "销售团队",
+          value: "sales_team",
+          status: "active",
+          remark: "销售推广团队",
+          level: 2,
+          parentId: "dept-5"
+        },
+        {
+          id: "dept-7",
+          key: "promotion",
+          name: "推广团队",
+          value: "promotion_team",
+          status: "active",
+          remark: "品牌推广团队",
+          level: 2,
+          parentId: "dept-5"
+        }
+      ]
     }
   ]);
 
@@ -447,29 +632,122 @@ const Index = () => {
       name: "电商产品管理",
       description: "电商平台产品信息管理任务库",
       administrator: "张三",
-      connectedTagLibraryId: "lib-1",
-      tagMappings: {},
+      connectedTagLibraryIds: ["lib-1", "lib-2"],
+      tagMappings: {
+        "lib-1": {
+          "tag-1": "product_category",
+          "tag-2": "product_type"
+        },
+        "lib-2": {
+          "region-1": "sales_region",
+          "region-2": "target_market"
+        }
+      },
       createdAt: new Date("2024-01-15"),
       createdBy: "user-1"
     },
     {
       id: "task-2", 
-      name: "区域销售分析",
-      description: "按地区进行销售数据分析的任务库",
+      name: "项目管理系统",
+      description: "企业项目管理和任务追踪系统",
       administrator: "李四",
-      connectedTagLibraryId: "lib-2",
-      tagMappings: {},
+      connectedTagLibraryIds: ["lib-3", "lib-4"],
+      tagMappings: {
+        "lib-3": {
+          "status-1": "task_status",
+          "priority-1": "task_priority"
+        },
+        "lib-4": {
+          "dept-1": "assigned_department",
+          "dept-2": "responsible_team"
+        }
+      },
       createdAt: new Date("2024-01-20"),
       createdBy: "user-2"
     },
     {
       id: "task-3",
-      name: "客户服务管理",
-      description: "客户服务流程管理任务库",
+      name: "全渠道营销管理",
+      description: "多渠道营销活动管理和数据分析",
       administrator: "王五",
-      tagMappings: {},
+      connectedTagLibraryIds: ["lib-1", "lib-2", "lib-4"],
+      tagMappings: {
+        "lib-1": {
+          "tag-1": "product_line",
+          "tag-18": "target_category"
+        },
+        "lib-2": {
+          "region-1": "marketing_region",
+          "region-3": "key_market"
+        },
+        "lib-4": {
+          "dept-5": "marketing_dept",
+          "dept-6": "sales_team"
+        }
+      },
       createdAt: new Date("2024-01-25"),
       createdBy: "user-3"
+    },
+    {
+      id: "task-4",
+      name: "客户服务管理",
+      description: "客户服务流程管理和服务质量监控",
+      administrator: "赵六",
+      connectedTagLibraryIds: ["lib-3", "lib-2"],
+      tagMappings: {
+        "lib-3": {
+          "status-1": "service_status",
+          "priority-1": "service_priority"
+        },
+        "lib-2": {
+          "region-1": "service_region",
+          "region-2": "coverage_area"
+        }
+      },
+      createdAt: new Date("2024-01-30"),
+      createdBy: "user-4"
+    },
+    {
+      id: "task-5",
+      name: "技术研发管理",
+      description: "技术研发项目和资源管理系统",
+      administrator: "孙七",
+      connectedTagLibraryIds: ["lib-1", "lib-3", "lib-4"],
+      tagMappings: {
+        "lib-1": {
+          "tag-1": "tech_category",
+          "tag-13": "hardware_type"
+        },
+        "lib-3": {
+          "status-1": "development_status",
+          "priority-1": "development_priority"
+        },
+        "lib-4": {
+          "dept-1": "development_team",
+          "dept-2": "frontend_responsibility"
+        }
+      },
+      createdAt: new Date("2024-02-01"),
+      createdBy: "user-5"
+    },
+    {
+      id: "task-6",
+      name: "供应链管理",
+      description: "供应链优化和物流管理系统",
+      administrator: "周八",
+      connectedTagLibraryIds: ["lib-2", "lib-3"],
+      tagMappings: {
+        "lib-2": {
+          "region-1": "supply_region",
+          "region-3": "logistics_hub"
+        },
+        "lib-3": {
+          "status-1": "supply_status",
+          "priority-1": "supply_priority"
+        }
+      },
+      createdAt: new Date("2024-02-05"),
+      createdBy: "user-6"
     }
   ]);
 
@@ -487,6 +765,20 @@ const Index = () => {
       libraryId: "lib-2",
       role: "operator",
       grantedAt: new Date("2024-01-20"),
+      grantedBy: "system"
+    },
+    {
+      userId: "user-1",
+      libraryId: "lib-3",
+      role: "viewer",
+      grantedAt: new Date("2024-01-25"),
+      grantedBy: "system"
+    },
+    {
+      userId: "user-1",
+      libraryId: "lib-4",
+      role: "operator",
+      grantedAt: new Date("2024-01-30"),
       grantedBy: "system"
     }
   ]);
@@ -506,53 +798,67 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 标签库管理 */}
-          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <TagIcon className="w-6 h-6" />
-                标签库管理
-              </CardTitle>
-              <CardDescription className="text-blue-100">
-                创建和管理企业标签分类体系
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <TagLibraryManager 
-                tagLibraries={tagLibraries}
-                setTagLibraries={setTagLibraries}
-                currentUser={currentUser}
-                permissions={permissions}
-                setPermissions={setPermissions}
-                permissionRequests={permissionRequests}
-                setPermissionRequests={setPermissionRequests}
-              />
-            </CardContent>
-          </Card>
+        {/* 恢复切卡模式 */}
+        <Tabs defaultValue="tag-library" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="tag-library" className="flex items-center gap-2">
+              <TagIcon className="w-4 h-4" />
+              标签库管理
+            </TabsTrigger>
+            <TabsTrigger value="task-library" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              任务库管理
+            </TabsTrigger>
+          </TabsList>
 
-          {/* 任务库管理 */}
-          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <FileText className="w-6 h-6" />
-                任务库管理
-              </CardTitle>
-              <CardDescription className="text-purple-100">
-                创建任务库并关联标签库进行数据筛选
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <TaskLibraryManager 
-                taskLibraries={taskLibraries}
-                setTaskLibraries={setTaskLibraries}
-                tagLibraries={tagLibraries}
-                currentUser={currentUser}
-                permissions={permissions}
-              />
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="tag-library">
+            <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+              <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <TagIcon className="w-6 h-6" />
+                  标签库管理
+                </CardTitle>
+                <CardDescription className="text-blue-100">
+                  创建和管理企业标签分类体系
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <TagLibraryManager 
+                  tagLibraries={tagLibraries}
+                  setTagLibraries={setTagLibraries}
+                  currentUser={currentUser}
+                  permissions={permissions}
+                  setPermissions={setPermissions}
+                  permissionRequests={permissionRequests}
+                  setPermissionRequests={setPermissionRequests}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="task-library">
+            <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+              <CardHeader className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <FileText className="w-6 h-6" />
+                  任务库管理
+                </CardTitle>
+                <CardDescription className="text-purple-100">
+                  创建任务库并关联多个标签库进行数据筛选
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <TaskLibraryManager 
+                  taskLibraries={taskLibraries}
+                  setTaskLibraries={setTaskLibraries}
+                  tagLibraries={tagLibraries}
+                  currentUser={currentUser}
+                  permissions={permissions}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* 统计信息 */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
