@@ -1,5 +1,6 @@
 
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,7 @@ const TaskLibraryManager = ({
   currentUser,
   permissions 
 }: TaskLibraryManagerProps) => {
+  const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newTaskLibrary, setNewTaskLibrary] = useState({ 
     name: "", 
@@ -44,6 +46,18 @@ const TaskLibraryManager = ({
   const [selectedTagLibraryFilter, setSelectedTagLibraryFilter] = useState<string>("all");
   
   const { toast } = useToast();
+  
+  // 导航到任务库详情页
+  const handleNavigateToTaskLibrary = (taskLibraryId: string) => {
+    navigate(`/task-library/${taskLibraryId}`, {
+      state: {
+        taskLibraries,
+        tagLibraries,
+        currentUser,
+        permissions
+      }
+    });
+  };
 
   // 获取用户有权限的标签库
   const userAccessibleTagLibraries = useMemo(() => {
@@ -378,7 +392,10 @@ const TaskLibraryManager = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.open(`/task-library/${taskLibrary.id}`, '_blank')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleNavigateToTaskLibrary(taskLibrary.id);
+                          }}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -477,7 +494,7 @@ const TaskLibraryManager = ({
                     {/* 进入详情按钮 */}
                     <Button 
                       className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                      onClick={() => window.open(`/task-library/${taskLibrary.id}`, '_blank')}
+                      onClick={() => handleNavigateToTaskLibrary(taskLibrary.id)}
                     >
                       <Settings className="w-4 h-4 mr-2" />
                       进入详情

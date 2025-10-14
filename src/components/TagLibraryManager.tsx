@@ -179,7 +179,14 @@ const TagLibraryManager = ({
       setPermissionDialogLibrary(library);
       return;
     }
-    navigate(`/tag-library/${library.id}`);
+    // 通过 state 传递数据到编辑页面
+    navigate(`/tag-library/${library.id}`, {
+      state: {
+        tagLibraries,
+        currentUser,
+        permissions
+      }
+    });
   };
 
   const handlePermissionRequest = (request: PermissionRequest) => {
