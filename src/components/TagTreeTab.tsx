@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { TagLibrary, User, LibraryPermission, Tag } from "@/types/permissions";
 import TagTree from "@/components/TagTree";
 import TagForm from "@/components/TagForm";
@@ -9,7 +10,7 @@ import TagImportExport from "@/components/TagImportExport";
 import BatchEditDialog from "@/components/BatchEditDialog";
 import TagLogDialog from "@/components/TagLogDialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Download, Upload, Expand, Shrink, Edit } from "lucide-react";
+import { Plus, Download, Upload, Expand, Shrink, Edit, Search, X } from "lucide-react";
 
 interface TagTreeTabProps {
   library: TagLibrary;
@@ -33,6 +34,7 @@ const TagTreeTab = ({
   const [selectedTagForLog, setSelectedTagForLog] = useState<Tag | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [expandedAll, setExpandedAll] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
 
   const canEdit = userPermission?.role === "administrator" || userPermission?.role === "operator";
@@ -188,6 +190,16 @@ const TagTreeTab = ({
     setShowTagLog(true);
   };
 
+  // 搜索过滤函数
+  const filteredTags = searchQuery.trim() 
+    ? library.tags.filter(tag => 
+        tag.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tag.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tag.value.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (tag.remark && tag.remark.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : library.tags;
+
   return (
     <div className="space-y-6">
       <Card>
@@ -236,8 +248,38 @@ const TagTreeTab = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* 搜索框 */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="搜索标签（支持名称、键、值、备注）..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-9"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+            {searchQuery && (
+              <p className="text-sm text-muted-foreground mt-2">
+                找到 {filteredTags.length} 个匹配的标签
+              </p>
+            )}
+          </div>
+
           <TagTree 
-            tags={library.tags}
+            tags={filteredTags}
+            allTags={library.tags}
             canEdit={canEdit}
             expandedAll={expandedAll}
             selectedTags={selectedTags}
@@ -247,6 +289,7 @@ const TagTreeTab = ({
             onToggleStatus={handleToggleTagStatus}
             onShowLog={handleShowTagLog}
             onSelectTags={setSelectedTags}
+            isSearching={!!searchQuery.trim()}
           />
         </CardContent>
       </Card>

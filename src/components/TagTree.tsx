@@ -8,6 +8,7 @@ import { ChevronRight, ChevronDown, Edit, Trash2, Plus, Power, History } from "l
 
 interface TagTreeProps {
   tags: Tag[];
+  allTags: Tag[];
   canEdit: boolean;
   expandedAll?: boolean;
   selectedTags: string[];
@@ -17,6 +18,7 @@ interface TagTreeProps {
   onToggleStatus: (tagId: string) => void;
   onShowLog: (tag: Tag) => void;
   onSelectTags: (tagIds: string[]) => void;
+  isSearching?: boolean;
 }
 
 interface TagNodeProps {
@@ -200,6 +202,7 @@ const TagNode = ({
 
 const TagTree = ({ 
   tags, 
+  allTags,
   canEdit, 
   expandedAll, 
   selectedTags, 
@@ -208,9 +211,12 @@ const TagTree = ({
   onAddChild, 
   onToggleStatus, 
   onShowLog, 
-  onSelectTags 
+  onSelectTags,
+  isSearching = false
 }: TagTreeProps) => {
-  const rootTags = tags.filter(tag => tag.level === 1 || !tag.parentId);
+  // 搜索模式：直接显示所有匹配的标签为平铺列表
+  // 树模式：只显示根节点
+  const displayTags = isSearching ? tags : tags.filter(tag => tag.level === 1 || !tag.parentId);
 
   if (tags.length === 0) {
     return (
@@ -225,14 +231,15 @@ const TagTree = ({
 
   return (
     <div className="space-y-2">
-      {rootTags.map((rootTag) => {
-        const children = tags.filter(tag => tag.parentId === rootTag.id);
+      {displayTags.map((tag) => {
+        // 在搜索模式下，不显示子节点（平铺显示）
+        const children = isSearching ? [] : allTags.filter(t => t.parentId === tag.id);
         return (
           <TagNode
-            key={rootTag.id}
-            tag={rootTag}
+            key={tag.id}
+            tag={tag}
             children={children}
-            allTags={tags}
+            allTags={allTags}
             canEdit={canEdit}
             expandedAll={expandedAll}
             selectedTags={selectedTags}
