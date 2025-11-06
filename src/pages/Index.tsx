@@ -34,6 +34,8 @@ const Index = () => {
       description: "用于产品分类管理的标签体系",
       administrator: "张三",
       createdAt: new Date("2024-01-15"),
+      versionManagementEnabled: false,
+      versions: [],
       tags: [
         // 一级标签 - 电子产品
         {
@@ -314,6 +316,8 @@ const Index = () => {
       description: "地理区域划分标签体系",
       administrator: "李四",
       createdAt: new Date("2024-01-20"),
+      versionManagementEnabled: false,
+      versions: [],
       tags: [
         // 一级标签 - 中国
         {
@@ -447,6 +451,8 @@ const Index = () => {
       description: "任务状态和优先级管理标签体系",
       administrator: "王五",
       createdAt: new Date("2024-01-25"),
+      versionManagementEnabled: false,
+      versions: [],
       tags: [
         // 一级标签 - 任务状态
         {
@@ -549,6 +555,8 @@ const Index = () => {
       description: "企业部门组织架构标签体系",
       administrator: "赵六",
       createdAt: new Date("2024-01-30"),
+      versionManagementEnabled: false,
+      versions: [],
       tags: [
         // 一级标签 - 技术部
         {

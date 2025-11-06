@@ -142,6 +142,8 @@ const TagLibraryManager = ({
       administrator: newLibrary.administrator,
       tags: [],
       createdAt: new Date(),
+      versionManagementEnabled: false,
+      versions: [],
     };
 
     // 自动为创建者添加管理员权限
