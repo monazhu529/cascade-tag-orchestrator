@@ -12,9 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TagVersion, Tag } from "@/types/permissions";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CheckCircle2, Clock, Rocket } from "lucide-react";
+import { Calendar, CheckCircle2, Clock, Rocket, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { Dialog as ViewDialog, DialogContent as ViewDialogContent, DialogHeader as ViewDialogHeader, DialogTitle as ViewDialogTitle } from "@/components/ui/dialog";
+import TagTree from "./TagTree";
 
 interface VersionManagementDialogProps {
   open: boolean;
@@ -40,6 +42,7 @@ const VersionManagementDialog = ({
   const [isCreating, setIsCreating] = useState(false);
   const [versionNumber, setVersionNumber] = useState("");
   const [description, setDescription] = useState("");
+  const [viewingVersion, setViewingVersion] = useState<TagVersion | null>(null);
 
   const handleCreateVersion = () => {
     if (!versionNumber.trim()) return;
@@ -133,16 +136,27 @@ const VersionManagementDialog = ({
                           </p>
                         )}
                       </div>
-                      {!version.isPublished && (
+                      <div className="flex gap-2">
                         <Button
                           size="sm"
-                          onClick={() => onPublishVersion(version.id)}
+                          variant="outline"
+                          onClick={() => setViewingVersion(version)}
                           className="gap-1"
                         >
-                          <Rocket className="w-3 h-3" />
-                          发布
+                          <Eye className="w-3 h-3" />
+                          查看
                         </Button>
-                      )}
+                        {!version.isPublished && (
+                          <Button
+                            size="sm"
+                            onClick={() => onPublishVersion(version.id)}
+                            className="gap-1"
+                          >
+                            <Rocket className="w-3 h-3" />
+                            发布
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -166,6 +180,82 @@ const VersionManagementDialog = ({
               </div>
             )}
           </div>
+        )}
+
+        {/* 版本查看对话框 */}
+        {viewingVersion && (
+          <ViewDialog open={!!viewingVersion} onOpenChange={() => setViewingVersion(null)}>
+            <ViewDialogContent className="max-w-4xl max-h-[80vh]">
+              <ViewDialogHeader>
+                <ViewDialogTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span>版本详情: {viewingVersion.versionNumber}</span>
+                    {viewingVersion.isPublished && (
+                      <Badge variant="default" className="gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        已发布
+                      </Badge>
+                    )}
+                  </div>
+                </ViewDialogTitle>
+              </ViewDialogHeader>
+              
+              <div className="space-y-4">
+                {viewingVersion.description && (
+                  <div className="text-sm text-muted-foreground border-l-4 border-primary pl-3">
+                    {viewingVersion.description}
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">创建时间：</span>
+                    {format(new Date(viewingVersion.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">创建者：</span>
+                    {viewingVersion.createdBy}
+                  </div>
+                  {viewingVersion.isPublished && viewingVersion.publishedAt && (
+                    <>
+                      <div>
+                        <span className="text-muted-foreground">发布时间：</span>
+                        {format(new Date(viewingVersion.publishedAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}
+                      </div>
+                      {viewingVersion.publishedBy && (
+                        <div>
+                          <span className="text-muted-foreground">发布者：</span>
+                          {viewingVersion.publishedBy}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <div>
+                    <span className="text-muted-foreground">标签数量：</span>
+                    {viewingVersion.tags.length} 个
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold mb-3">标签结构</h4>
+                  <div className="max-h-96 overflow-y-auto">
+                    <TagTree 
+                      tags={viewingVersion.tags}
+                      allTags={viewingVersion.tags}
+                      selectedTags={[]}
+                      onEdit={() => {}}
+                      onDelete={() => {}}
+                      onAddChild={() => {}}
+                      onToggleStatus={() => {}}
+                      onShowLog={() => {}}
+                      onSelectTags={() => {}}
+                      canEdit={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            </ViewDialogContent>
+          </ViewDialog>
         )}
       </DialogContent>
     </Dialog>
