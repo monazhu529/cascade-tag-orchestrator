@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Info, Tag, List, History, AlertCircle, Users } from "lucide-react";
-import { TagLibrary, User, LibraryPermission } from "@/types/permissions";
+import { TagLibrary, User, LibraryPermission, ClientSubscription } from "@/types/permissions";
 import LibraryInfoTab from "@/components/LibraryInfoTab";
 import TagTreeTab from "@/components/TagTreeTab";
 import TasksTab from "@/components/TasksTab";
@@ -17,13 +17,15 @@ interface TagLibraryEditProps {
   setTagLibraries: React.Dispatch<React.SetStateAction<TagLibrary[]>>;
   currentUser: User;
   permissions: LibraryPermission[];
+  clientSubscriptions?: ClientSubscription[];
 }
 
 const TagLibraryEdit = ({ 
   tagLibraries, 
   setTagLibraries, 
   currentUser, 
-  permissions 
+  permissions,
+  clientSubscriptions = []
 }: TagLibraryEditProps) => {
   const { libraryId } = useParams<{ libraryId: string }>();
   const navigate = useNavigate();
@@ -176,6 +178,7 @@ const TagLibraryEdit = ({
                     userPermission={userPermission}
                     permissions={permissions}
                     onUpdate={handleUpdate}
+                    clientSubscriptions={clientSubscriptions}
                   />
                 </TabsContent>
                 

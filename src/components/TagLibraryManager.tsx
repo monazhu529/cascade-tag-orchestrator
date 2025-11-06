@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Trash2, Tag, User, Hash, Lock, Users, Search } from "lucide-react";
 import { TagLibrary } from "@/types/permissions";
-import { User as UserType, LibraryPermission, PermissionRequest } from "@/types/permissions";
+import { User as UserType, LibraryPermission, PermissionRequest, ClientSubscription } from "@/types/permissions";
 import PermissionRequestDialog from "@/components/PermissionRequestDialog";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,6 +23,7 @@ interface TagLibraryManagerProps {
   setPermissions: React.Dispatch<React.SetStateAction<LibraryPermission[]>>;
   permissionRequests: PermissionRequest[];
   setPermissionRequests: React.Dispatch<React.SetStateAction<PermissionRequest[]>>;
+  clientSubscriptions?: ClientSubscription[];
 }
 
 const TagLibraryManager = ({ 
@@ -32,7 +33,8 @@ const TagLibraryManager = ({
   permissions, 
   setPermissions,
   permissionRequests,
-  setPermissionRequests
+  setPermissionRequests,
+  clientSubscriptions = []
 }: TagLibraryManagerProps) => {
   const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -186,7 +188,8 @@ const TagLibraryManager = ({
       state: {
         tagLibraries,
         currentUser,
-        permissions
+        permissions,
+        clientSubscriptions
       }
     });
   };

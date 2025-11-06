@@ -98,3 +98,14 @@ export interface SyncConfig {
   syncFrequency: 'realtime' | 'hourly' | 'daily' | 'weekly';
   lastSyncTime?: string;
 }
+
+export interface ClientSubscription {
+  id: string;
+  clientId: string;
+  tagLibraryId: string;
+  environment: string; // 环境：生产、测试、开发等
+  appServer: string; // 应用服务器
+  containerId: string; // 容器ID
+  subscribedVersionNumber: string; // 订阅的版本号
+  lastSyncTime: Date; // 最后一次同步时间
+}

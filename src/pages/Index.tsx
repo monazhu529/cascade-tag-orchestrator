@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Database, Tag as TagIcon, FileText } from "lucide-react";
 import TagLibraryManager from "@/components/TagLibraryManager";
 import TaskLibraryManager from "@/components/TaskLibraryManager";
-import { TagLibrary, Tag, User, LibraryPermission, PermissionRequest } from "@/types/permissions";
+import { TagLibrary, Tag, User, LibraryPermission, PermissionRequest, ClientSubscription } from "@/types/permissions";
 
 export interface TaskLibrary {
   id: string;
@@ -825,6 +825,50 @@ const Index = () => {
   // Add permission requests state for TagLibraryManager
   const [permissionRequests, setPermissionRequests] = useState<PermissionRequest[]>([]);
 
+  // 客户端订阅数据
+  const [clientSubscriptions] = useState<ClientSubscription[]>([
+    {
+      id: "sub-1",
+      clientId: "client-app-001",
+      tagLibraryId: "lib-1",
+      environment: "生产环境",
+      appServer: "app-server-01.prod.example.com",
+      containerId: "container-abc123",
+      subscribedVersionNumber: "v1.1.0",
+      lastSyncTime: new Date("2024-03-10 14:30:00")
+    },
+    {
+      id: "sub-2",
+      clientId: "client-app-002",
+      tagLibraryId: "lib-1",
+      environment: "测试环境",
+      appServer: "app-server-02.test.example.com",
+      containerId: "container-def456",
+      subscribedVersionNumber: "v1.2.0",
+      lastSyncTime: new Date("2024-03-12 09:15:00")
+    },
+    {
+      id: "sub-3",
+      clientId: "client-app-003",
+      tagLibraryId: "lib-1",
+      environment: "开发环境",
+      appServer: "app-server-03.dev.example.com",
+      containerId: "container-ghi789",
+      subscribedVersionNumber: "v1.0.0",
+      lastSyncTime: new Date("2024-03-05 16:45:00")
+    },
+    {
+      id: "sub-4",
+      clientId: "client-mobile-001",
+      tagLibraryId: "lib-2",
+      environment: "生产环境",
+      appServer: "mobile-server-01.prod.example.com",
+      containerId: "container-jkl012",
+      subscribedVersionNumber: "v2.0.0",
+      lastSyncTime: new Date("2024-03-11 11:20:00")
+    }
+  ]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <div className="container mx-auto p-6">
@@ -870,6 +914,7 @@ const Index = () => {
                   setPermissions={setPermissions}
                   permissionRequests={permissionRequests}
                   setPermissionRequests={setPermissionRequests}
+                  clientSubscriptions={clientSubscriptions}
                 />
               </CardContent>
             </Card>

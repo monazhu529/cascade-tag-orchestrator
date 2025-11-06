@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { TagLibrary, User, LibraryPermission, TagVersion } from "@/types/permissions";
+import { TagLibrary, User, LibraryPermission, TagVersion, ClientSubscription } from "@/types/permissions";
 import UserManagement from "@/components/UserManagement";
 import VersionManagementDialog from "@/components/VersionManagementDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ interface LibraryInfoTabProps {
   userPermission?: LibraryPermission;
   permissions: LibraryPermission[];
   onUpdate: (updatedLibrary: TagLibrary) => void;
+  clientSubscriptions?: ClientSubscription[];
 }
 
 const LibraryInfoTab = ({ 
@@ -25,7 +26,8 @@ const LibraryInfoTab = ({
   currentUser, 
   userPermission, 
   permissions,
-  onUpdate 
+  onUpdate,
+  clientSubscriptions = []
 }: LibraryInfoTabProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedLibrary, setEditedLibrary] = useState(library);
@@ -34,8 +36,8 @@ const LibraryInfoTab = ({
 
   const canEdit = userPermission?.role === "administrator";
   
-  const publishedVersion = library.versionManagementEnabled && library.publishedVersionId
-    ? library.versions?.find(v => v.id === library.publishedVersionId)
+  const publishedVersion = library.versionManagementEnabled && library.publishedVersionId && library.versions
+    ? library.versions.find(v => v.id === library.publishedVersionId)
     : undefined;
 
   const handleSave = () => {
@@ -111,6 +113,7 @@ const LibraryInfoTab = ({
   };
 
   const libraryPermissions = permissions.filter(p => p.libraryId === library.id);
+  const librarySubscriptions = clientSubscriptions.filter(s => s.tagLibraryId === library.id);
 
   return (
     <div className="space-y-6">
@@ -251,6 +254,51 @@ const LibraryInfoTab = ({
           </CardContent>
         </Card>
       )}
+
+      {/* 客户端订阅信息 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>客户端订阅信息</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {librarySubscriptions.length > 0 ? (
+            <div className="space-y-2">
+              {librarySubscriptions.map((subscription) => (
+                <div key={subscription.id} className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">客户端ID: {subscription.clientId}</div>
+                    <Badge variant="outline">
+                      {subscription.subscribedVersionNumber}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                    <div>
+                      <span className="font-medium">环境：</span>
+                      {subscription.environment}
+                    </div>
+                    <div>
+                      <span className="font-medium">App Server：</span>
+                      {subscription.appServer}
+                    </div>
+                    <div>
+                      <span className="font-medium">容器ID：</span>
+                      {subscription.containerId}
+                    </div>
+                    <div>
+                      <span className="font-medium">最后同步：</span>
+                      {subscription.lastSyncTime.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              暂无客户端订阅此标签库
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
