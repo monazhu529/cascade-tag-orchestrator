@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { TagLibrary, User, LibraryPermission } from "@/types/permissions";
+import { Switch } from "@/components/ui/switch";
+import { TagLibrary, User, LibraryPermission, TagVersion } from "@/types/permissions";
 import UserManagement from "@/components/UserManagement";
+import VersionManagementDialog from "@/components/VersionManagementDialog";
 import { useToast } from "@/hooks/use-toast";
-import { Edit2, Save, X } from "lucide-react";
+import { Edit2, Save, X, GitBranch } from "lucide-react";
 
 interface LibraryInfoTabProps {
   library: TagLibrary;
@@ -28,9 +29,14 @@ const LibraryInfoTab = ({
 }: LibraryInfoTabProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedLibrary, setEditedLibrary] = useState(library);
+  const [showVersionManagement, setShowVersionManagement] = useState(false);
   const { toast } = useToast();
 
   const canEdit = userPermission?.role === "administrator";
+  
+  const publishedVersion = library.versionManagementEnabled && library.publishedVersionId
+    ? library.versions?.find(v => v.id === library.publishedVersionId)
+    : undefined;
 
   const handleSave = () => {
     onUpdate(editedLibrary);
@@ -44,6 +50,64 @@ const LibraryInfoTab = ({
   const handleCancel = () => {
     setEditedLibrary(library);
     setIsEditing(false);
+  };
+
+  const handleToggleVersionManagement = (enabled: boolean) => {
+    onUpdate({ 
+      ...library, 
+      versionManagementEnabled: enabled,
+      versions: enabled ? (library.versions || []) : [],
+      publishedVersionId: enabled ? library.publishedVersionId : undefined,
+    });
+    
+    toast({
+      title: enabled ? "版本管理已开启" : "版本管理已关闭",
+      description: enabled 
+        ? "标签修改将不会直接影响订阅方，需要发布版本后才会生效" 
+        : "标签修改将实时影响订阅方",
+    });
+  };
+
+  const handleCreateVersion = (versionNumber: string, description: string) => {
+    const newVersion: TagVersion = {
+      id: crypto.randomUUID(),
+      versionNumber,
+      tags: JSON.parse(JSON.stringify(library.tags)), // 深拷贝当前标签数据
+      createdAt: new Date(),
+      createdBy: currentUser.name,
+      isPublished: false,
+      description,
+    };
+
+    const updatedVersions = [...(library.versions || []), newVersion];
+    onUpdate({ ...library, versions: updatedVersions });
+    
+    toast({
+      title: "版本创建成功",
+      description: `版本 ${versionNumber} 已创建`,
+    });
+  };
+
+  const handlePublishVersion = (versionId: string) => {
+    const version = library.versions?.find(v => v.id === versionId);
+    if (!version) return;
+
+    const updatedVersions = library.versions?.map(v => 
+      v.id === versionId 
+        ? { ...v, isPublished: true, publishedAt: new Date(), publishedBy: currentUser.name }
+        : v
+    );
+
+    onUpdate({ 
+      ...library, 
+      versions: updatedVersions,
+      publishedVersionId: versionId,
+    });
+    
+    toast({
+      title: "版本发布成功",
+      description: `版本 ${version.versionNumber} 已发布，订阅方将获取此版本的标签数据`,
+    });
   };
 
   const libraryPermissions = permissions.filter(p => p.libraryId === library.id);
@@ -131,6 +195,63 @@ const LibraryInfoTab = ({
         </CardContent>
       </Card>
 
+      {/* 版本管理设置 */}
+      {canEdit && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">版本管理</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="version-mode">启用版本管理</Label>
+                  {library.versionManagementEnabled ? (
+                    <Badge variant="secondary">版本模式</Badge>
+                  ) : (
+                    <Badge variant="outline">实时模式</Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {library.versionManagementEnabled 
+                    ? "标签修改需要发布版本后才会影响订阅方" 
+                    : "标签修改将实时影响订阅方"}
+                </p>
+              </div>
+              <Switch
+                id="version-mode"
+                checked={library.versionManagementEnabled}
+                onCheckedChange={handleToggleVersionManagement}
+              />
+            </div>
+
+            {library.versionManagementEnabled && (
+              <div className="flex items-center gap-2 pt-2 border-t">
+                <Button
+                  onClick={() => setShowVersionManagement(true)}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <GitBranch className="w-4 h-4" />
+                  管理版本
+                </Button>
+                {publishedVersion && (
+                  <div className="text-sm text-muted-foreground">
+                    当前发布版本: <span className="font-medium">{publishedVersion.versionNumber}</span>
+                  </div>
+                )}
+                {library.versions && library.versions.length > 0 && (
+                  <Badge variant="outline">
+                    共 {library.versions.length} 个版本
+                  </Badge>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>权限管理</CardTitle>
@@ -167,6 +288,19 @@ const LibraryInfoTab = ({
           </div>
         </CardContent>
       </Card>
+
+      {showVersionManagement && (
+        <VersionManagementDialog
+          open={showVersionManagement}
+          onClose={() => setShowVersionManagement(false)}
+          versions={library.versions || []}
+          currentTags={library.tags}
+          currentUser={currentUser.name}
+          publishedVersionId={library.publishedVersionId}
+          onCreateVersion={handleCreateVersion}
+          onPublishVersion={handlePublishVersion}
+        />
+      )}
     </div>
   );
 };

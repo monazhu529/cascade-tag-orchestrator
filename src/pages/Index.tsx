@@ -34,8 +34,39 @@ const Index = () => {
       description: "用于产品分类管理的标签体系",
       administrator: "张三",
       createdAt: new Date("2024-01-15"),
-      versionManagementEnabled: false,
-      versions: [],
+      versionManagementEnabled: true,
+      publishedVersionId: "version-1-2",
+      versions: [
+        {
+          id: "version-1-1",
+          versionNumber: "v1.0.0",
+          description: "初始版本，包含基础产品分类体系",
+          createdAt: new Date("2024-02-01"),
+          createdBy: "张三",
+          isPublished: false,
+          tags: [] // 简化处理，实际应该包含当时的标签快照
+        },
+        {
+          id: "version-1-2",
+          versionNumber: "v1.1.0",
+          description: "新增电子产品五级标签，完善存储容量分类",
+          createdAt: new Date("2024-02-15"),
+          createdBy: "张三",
+          isPublished: true,
+          publishedAt: new Date("2024-02-20"),
+          publishedBy: "张三",
+          tags: [] // 简化处理
+        },
+        {
+          id: "version-1-3",
+          versionNumber: "v1.2.0",
+          description: "新增服装分类标签，扩展产品类型",
+          createdAt: new Date("2024-03-01"),
+          createdBy: "李四",
+          isPublished: false,
+          tags: []
+        }
+      ],
       tags: [
         // 一级标签 - 电子产品
         {
