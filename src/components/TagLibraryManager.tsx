@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Tag, User, Hash, Lock, Users, Search } from "lucide-react";
+import { Plus, Edit, Trash2, Tag, User, Hash, Lock, Users, Search, GitBranch } from "lucide-react";
 import { TagLibrary } from "@/types/permissions";
 import { User as UserType, LibraryPermission, PermissionRequest, ClientSubscription } from "@/types/permissions";
 import PermissionRequestDialog from "@/components/PermissionRequestDialog";
@@ -416,16 +416,22 @@ const TagLibraryManager = ({
                       <span className="text-sm text-gray-600">{library.administrator}</span>
                     </div>
 
-                    {hasPermission && (
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {hasPermission && (
                         <Badge 
                           variant={userPermission.role === "administrator" ? "default" : "secondary"}
                           className="text-xs"
                         >
                           {userPermission.role === "administrator" ? "管理员" : "运营"}
                         </Badge>
-                      </div>
-                    )}
+                      )}
+                      {library.versionManagementEnabled && (
+                        <Badge variant="outline" className="text-xs flex items-center gap-1 text-green-600 border-green-200 bg-green-50">
+                          <GitBranch className="w-3 h-3" />
+                          版本管理
+                        </Badge>
+                      )}
+                    </div>
                     
                     <div className="flex items-center justify-between">
                       <div className="flex gap-2">
