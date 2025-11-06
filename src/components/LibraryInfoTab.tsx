@@ -282,12 +282,54 @@ const LibraryInfoTab = ({
                     className="gap-2"
                   >
                     <GitBranch className="w-4 h-4" />
-                    管理版本 {library.versions && library.versions.length > 0 && `(${library.versions.length})`}
+                    查看全部 {library.versions && library.versions.length > 0 && `(${library.versions.length})`}
                   </Button>
                 </div>
-                {publishedVersion && (
-                  <div className="text-sm text-muted-foreground">
-                    当前发布版本: <span className="font-medium">{publishedVersion.versionNumber}</span>
+                
+                {/* 版本列表 */}
+                {library.versions && library.versions.length > 0 ? (
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">最近版本</Label>
+                    {library.versions
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                      .slice(0, 5)
+                      .map((version) => (
+                        <div
+                          key={version.id}
+                          className="p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors cursor-pointer"
+                          onClick={() => navigate(`/tag-library/${library.id}/version/${version.id}`, {
+                            state: {
+                              version,
+                              libraryId: library.id,
+                              libraryName: library.name,
+                            }
+                          })}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{version.versionNumber}</span>
+                              {version.isPublished && (
+                                <Badge variant="default" className="text-xs">已发布</Badge>
+                              )}
+                              {library.publishedVersionId === version.id && (
+                                <Badge variant="secondary" className="text-xs">当前使用</Badge>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(version.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {version.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
+                              {version.description}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    暂无版本，点击"新增版本"创建第一个版本
                   </div>
                 )}
               </div>
