@@ -7,10 +7,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { TagLibrary, User, LibraryPermission, ClientSubscription, TagVersion } from "@/types/permissions";
 import UserManagement from "@/components/UserManagement";
 import { useToast } from "@/hooks/use-toast";
-import { Edit2, Save, X, GitBranch } from "lucide-react";
+import { Edit2, Save, X, GitBranch, Plus } from "lucide-react";
 
 interface LibraryInfoTabProps {
   library: TagLibrary;
@@ -31,6 +39,9 @@ const LibraryInfoTab = ({
 }: LibraryInfoTabProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedLibrary, setEditedLibrary] = useState(library);
+  const [showCreateVersion, setShowCreateVersion] = useState(false);
+  const [newVersionNumber, setNewVersionNumber] = useState("");
+  const [newVersionDescription, setNewVersionDescription] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -88,6 +99,15 @@ const LibraryInfoTab = ({
       title: "版本创建成功",
       description: `版本 ${versionNumber} 已创建`,
     });
+  };
+
+  const handleQuickCreateVersion = () => {
+    if (!newVersionNumber.trim()) return;
+    
+    handleCreateVersion(newVersionNumber.trim(), newVersionDescription.trim());
+    setShowCreateVersion(false);
+    setNewVersionNumber("");
+    setNewVersionDescription("");
   };
 
   const handlePublishVersion = (versionId: string) => {
@@ -244,25 +264,31 @@ const LibraryInfoTab = ({
             </div>
 
             {library.versionManagementEnabled && (
-              <div className="flex items-center gap-2 pt-2 border-t">
-                <Button
-                  onClick={handleManageVersions}
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                >
-                  <GitBranch className="w-4 h-4" />
-                  管理版本
-                </Button>
+              <div className="space-y-3 pt-2 border-t">
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setShowCreateVersion(true)}
+                    variant="default"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    新增版本
+                  </Button>
+                  <Button
+                    onClick={handleManageVersions}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <GitBranch className="w-4 h-4" />
+                    管理版本 {library.versions && library.versions.length > 0 && `(${library.versions.length})`}
+                  </Button>
+                </div>
                 {publishedVersion && (
                   <div className="text-sm text-muted-foreground">
                     当前发布版本: <span className="font-medium">{publishedVersion.versionNumber}</span>
                   </div>
-                )}
-                {library.versions && library.versions.length > 0 && (
-                  <Badge variant="outline">
-                    共 {library.versions.length} 个版本
-                  </Badge>
                 )}
               </div>
             )}
@@ -351,6 +377,47 @@ const LibraryInfoTab = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* 快速创建版本弹窗 */}
+      <Dialog open={showCreateVersion} onOpenChange={setShowCreateVersion}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>创建新版本</DialogTitle>
+            <DialogDescription>
+              将基于当前标签数据（{library.tags.length} 个标签）创建新版本
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="version-number">版本号 *</Label>
+              <Input
+                id="version-number"
+                placeholder="例如: v1.0.0"
+                value={newVersionNumber}
+                onChange={(e) => setNewVersionNumber(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="version-description">版本描述</Label>
+              <Textarea
+                id="version-description"
+                placeholder="描述此版本的主要变更..."
+                value={newVersionDescription}
+                onChange={(e) => setNewVersionDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateVersion(false)}>
+              取消
+            </Button>
+            <Button onClick={handleQuickCreateVersion} disabled={!newVersionNumber.trim()}>
+              创建版本
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
