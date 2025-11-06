@@ -3,11 +3,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TagVersion } from "@/types/permissions";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { TagVersion, Tag } from "@/types/permissions";
+import { ArrowLeft, CheckCircle2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import TagTree from "@/components/TagTree";
+import TagForm from "@/components/TagForm";
+import TagLogDialog from "@/components/TagLogDialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface VersionEditProps {
   version: TagVersion;
@@ -27,11 +30,155 @@ const VersionEdit = () => {
   } = (location.state || {}) as VersionEditProps;
 
   const [tags, setTags] = useState(version?.tags || []);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showTagForm, setShowTagForm] = useState(false);
+  const [editingTag, setEditingTag] = useState<Tag | null>(null);
+  const [parentIdForNew, setParentIdForNew] = useState<string | undefined>();
+  const [showLogDialog, setShowLogDialog] = useState(false);
+  const [selectedTagForLog, setSelectedTagForLog] = useState<Tag | null>(null);
+  const { toast } = useToast();
 
   const handleBack = () => {
     navigate(`/tag-library/${libraryId}/versions`, {
       state: location.state,
     });
+  };
+
+  const handleAddTag = () => {
+    if (version.isPublished) {
+      toast({
+        title: "无法编辑",
+        description: "已发布的版本无法编辑标签",
+        variant: "destructive",
+      });
+      return;
+    }
+    setEditingTag(null);
+    setParentIdForNew(undefined);
+    setShowTagForm(true);
+  };
+
+  const handleEditTag = (tag: Tag) => {
+    if (version.isPublished) {
+      toast({
+        title: "无法编辑",
+        description: "已发布的版本无法编辑标签",
+        variant: "destructive",
+      });
+      return;
+    }
+    setEditingTag(tag);
+    setParentIdForNew(undefined);
+    setShowTagForm(true);
+  };
+
+  const handleAddChild = (parentId: string) => {
+    if (version.isPublished) {
+      toast({
+        title: "无法编辑",
+        description: "已发布的版本无法编辑标签",
+        variant: "destructive",
+      });
+      return;
+    }
+    const parentTag = tags.find(t => t.id === parentId);
+    if (parentTag) {
+      setEditingTag(null);
+      setParentIdForNew(parentId);
+      setShowTagForm(true);
+    }
+  };
+
+  const handleDeleteTag = (tagId: string) => {
+    if (version.isPublished) {
+      toast({
+        title: "无法编辑",
+        description: "已发布的版本无法编辑标签",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const hasChildren = tags.some(t => t.parentId === tagId);
+    if (hasChildren) {
+      toast({
+        title: "无法删除",
+        description: "该标签有子标签，请先删除子标签",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setTags(tags.filter(t => t.id !== tagId));
+    toast({
+      title: "删除成功",
+      description: "标签已删除",
+    });
+  };
+
+  const handleToggleStatus = (tagId: string) => {
+    if (version.isPublished) {
+      toast({
+        title: "无法编辑",
+        description: "已发布的版本无法编辑标签",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setTags(tags.map(t => 
+      t.id === tagId 
+        ? { ...t, status: t.status === "active" ? "inactive" : "active" as "active" | "inactive" }
+        : t
+    ));
+    toast({
+      title: "状态已更新",
+      description: "标签状态已切换",
+    });
+  };
+
+  const handleShowLog = (tag: Tag) => {
+    setSelectedTagForLog(tag);
+    setShowLogDialog(true);
+  };
+
+  const handleSaveTag = (tagData: Partial<Tag>) => {
+    if (editingTag) {
+      // 编辑现有标签
+      setTags(tags.map(t => 
+        t.id === editingTag.id 
+          ? { ...t, ...tagData }
+          : t
+      ));
+      toast({
+        title: "保存成功",
+        description: "标签已更新",
+      });
+    } else {
+      // 添加新标签
+      const parentTag = parentIdForNew ? tags.find(t => t.id === parentIdForNew) : null;
+      const newLevel = parentTag ? parentTag.level + 1 : 1;
+      
+      const newTag: Tag = {
+        id: `tag_${Date.now()}`,
+        key: tagData.key || "",
+        name: tagData.name || "",
+        value: tagData.value || "",
+        status: tagData.status || "active",
+        remark: tagData.remark || "",
+        level: newLevel,
+        parentId: parentIdForNew,
+      };
+      
+      setTags([...tags, newTag]);
+      toast({
+        title: "添加成功",
+        description: "新标签已添加",
+      });
+    }
+    setShowTagForm(false);
+    setEditingTag(null);
+    setParentIdForNew(undefined);
   };
 
   if (!version) {
@@ -121,24 +268,56 @@ const VersionEdit = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>标签结构</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>标签结构</CardTitle>
+              {canEdit && !version.isPublished && (
+                <Button onClick={handleAddTag} size="sm" className="gap-1">
+                  <Plus className="w-4 h-4" />
+                  添加标签
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <TagTree 
               tags={tags}
               allTags={tags}
-              selectedTags={[]}
-              onEdit={() => {}}
-              onDelete={() => {}}
-              onAddChild={() => {}}
-              onToggleStatus={() => {}}
-              onShowLog={() => {}}
-              onSelectTags={() => {}}
+              selectedTags={selectedTags}
+              onEdit={handleEditTag}
+              onDelete={handleDeleteTag}
+              onAddChild={handleAddChild}
+              onToggleStatus={handleToggleStatus}
+              onShowLog={handleShowLog}
+              onSelectTags={setSelectedTags}
               canEdit={canEdit && !version.isPublished}
             />
           </CardContent>
         </Card>
       </div>
+
+      {showTagForm && (
+        <TagForm
+          tag={editingTag || undefined}
+          parentId={parentIdForNew}
+          allTags={tags}
+          onSave={handleSaveTag}
+          onCancel={() => {
+            setShowTagForm(false);
+            setEditingTag(null);
+            setParentIdForNew(undefined);
+          }}
+        />
+      )}
+
+      {showLogDialog && selectedTagForLog && (
+        <TagLogDialog
+          tag={selectedTagForLog}
+          onClose={() => {
+            setShowLogDialog(false);
+            setSelectedTagForLog(null);
+          }}
+        />
+      )}
     </div>
   );
 };
