@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import TagLibraryEditWrapper from "./components/TagLibraryEditWrapper";
 import NotFound from "./pages/NotFound";
 import TaskLibraryDetailWrapper from "./components/TaskLibraryDetailWrapper";
+import VersionManagement from "./pages/VersionManagement";
+import VersionEdit from "./pages/VersionEdit";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +21,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/tag-library/:libraryId" element={<TagLibraryEditWrapper />} />
+          <Route path="/tag-library/:libraryId/versions" element={<VersionManagement />} />
+          <Route path="/tag-library/:libraryId/version/:versionId" element={<VersionEdit />} />
           <Route path="/task-library/:taskLibraryId" element={<TaskLibraryDetailWrapper />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,9 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { TagLibrary, User, LibraryPermission, TagVersion, ClientSubscription } from "@/types/permissions";
+import { TagLibrary, User, LibraryPermission, ClientSubscription, TagVersion } from "@/types/permissions";
 import UserManagement from "@/components/UserManagement";
-import VersionManagementDialog from "@/components/VersionManagementDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Edit2, Save, X, GitBranch } from "lucide-react";
 
@@ -31,8 +31,8 @@ const LibraryInfoTab = ({
 }: LibraryInfoTabProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedLibrary, setEditedLibrary] = useState(library);
-  const [showVersionManagement, setShowVersionManagement] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const canEdit = userPermission?.role === "administrator";
   
@@ -109,6 +109,21 @@ const LibraryInfoTab = ({
     toast({
       title: "版本发布成功",
       description: `版本 ${version.versionNumber} 已发布，订阅方将获取此版本的标签数据`,
+    });
+  };
+
+  const handleManageVersions = () => {
+    navigate(`/tag-library/${library.id}/versions`, {
+      state: {
+        libraryId: library.id,
+        libraryName: library.name,
+        versions: library.versions || [],
+        currentTags: library.tags,
+        currentUser: currentUser.name,
+        publishedVersionId: library.publishedVersionId,
+        onCreateVersion: handleCreateVersion,
+        onPublishVersion: handlePublishVersion,
+      },
     });
   };
 
@@ -231,7 +246,7 @@ const LibraryInfoTab = ({
             {library.versionManagementEnabled && (
               <div className="flex items-center gap-2 pt-2 border-t">
                 <Button
-                  onClick={() => setShowVersionManagement(true)}
+                  onClick={handleManageVersions}
                   variant="outline"
                   size="sm"
                   className="gap-2"
@@ -336,19 +351,6 @@ const LibraryInfoTab = ({
           </div>
         </CardContent>
       </Card>
-
-      {showVersionManagement && (
-        <VersionManagementDialog
-          open={showVersionManagement}
-          onClose={() => setShowVersionManagement(false)}
-          versions={library.versions || []}
-          currentTags={library.tags}
-          currentUser={currentUser.name}
-          publishedVersionId={library.publishedVersionId}
-          onCreateVersion={handleCreateVersion}
-          onPublishVersion={handlePublishVersion}
-        />
-      )}
     </div>
   );
 };
