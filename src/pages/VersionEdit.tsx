@@ -4,13 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TagVersion, Tag } from "@/types/permissions";
-import { ArrowLeft, CheckCircle2, Plus } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Plus, Rocket } from "lucide-react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import TagTree from "@/components/TagTree";
 import TagForm from "@/components/TagForm";
 import TagLogDialog from "@/components/TagLogDialog";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface VersionEditProps {
   version: TagVersion;
@@ -36,6 +46,8 @@ const VersionEdit = () => {
   const [parentIdForNew, setParentIdForNew] = useState<string | undefined>();
   const [showLogDialog, setShowLogDialog] = useState(false);
   const [selectedTagForLog, setSelectedTagForLog] = useState<Tag | null>(null);
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [isPublished, setIsPublished] = useState(version?.isPublished || false);
   const { toast } = useToast();
 
   const handleBack = () => {
@@ -45,7 +57,7 @@ const VersionEdit = () => {
   };
 
   const handleAddTag = () => {
-    if (version.isPublished) {
+    if (isPublished) {
       toast({
         title: "无法编辑",
         description: "已发布的版本无法编辑标签",
@@ -59,7 +71,7 @@ const VersionEdit = () => {
   };
 
   const handleEditTag = (tag: Tag) => {
-    if (version.isPublished) {
+    if (isPublished) {
       toast({
         title: "无法编辑",
         description: "已发布的版本无法编辑标签",
@@ -73,7 +85,7 @@ const VersionEdit = () => {
   };
 
   const handleAddChild = (parentId: string) => {
-    if (version.isPublished) {
+    if (isPublished) {
       toast({
         title: "无法编辑",
         description: "已发布的版本无法编辑标签",
@@ -90,7 +102,7 @@ const VersionEdit = () => {
   };
 
   const handleDeleteTag = (tagId: string) => {
-    if (version.isPublished) {
+    if (isPublished) {
       toast({
         title: "无法编辑",
         description: "已发布的版本无法编辑标签",
@@ -117,7 +129,7 @@ const VersionEdit = () => {
   };
 
   const handleToggleStatus = (tagId: string) => {
-    if (version.isPublished) {
+    if (isPublished) {
       toast({
         title: "无法编辑",
         description: "已发布的版本无法编辑标签",
@@ -181,6 +193,19 @@ const VersionEdit = () => {
     setParentIdForNew(undefined);
   };
 
+  const handlePublish = () => {
+    setShowPublishDialog(true);
+  };
+
+  const confirmPublish = () => {
+    setIsPublished(true);
+    setShowPublishDialog(false);
+    toast({
+      title: "发布成功",
+      description: `版本 ${version.versionNumber} 已成功发布`,
+    });
+  };
+
   if (!version) {
     return (
       <div className="container mx-auto p-6">
@@ -207,7 +232,7 @@ const VersionEdit = () => {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold">{version.versionNumber}</h1>
-              {version.isPublished && (
+              {isPublished && (
                 <Badge variant="default" className="gap-1">
                   <CheckCircle2 className="w-4 h-4" />
                   已发布
@@ -216,6 +241,12 @@ const VersionEdit = () => {
             </div>
             <p className="text-muted-foreground mt-1">{libraryName}</p>
           </div>
+          {canEdit && !isPublished && (
+            <Button onClick={handlePublish} className="gap-2">
+              <Rocket className="w-4 h-4" />
+              发布版本
+            </Button>
+          )}
         </div>
       </div>
 
@@ -242,7 +273,7 @@ const VersionEdit = () => {
                 <span className="text-muted-foreground">创建者：</span>
                 <div className="font-medium">{version.createdBy}</div>
               </div>
-              {version.isPublished && version.publishedAt && (
+              {isPublished && version.publishedAt && (
                 <>
                   <div>
                     <span className="text-muted-foreground">发布时间：</span>
@@ -270,7 +301,7 @@ const VersionEdit = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>标签结构</CardTitle>
-              {canEdit && !version.isPublished && (
+              {canEdit && !isPublished && (
                 <Button onClick={handleAddTag} size="sm" className="gap-1">
                   <Plus className="w-4 h-4" />
                   添加标签
@@ -289,7 +320,7 @@ const VersionEdit = () => {
               onToggleStatus={handleToggleStatus}
               onShowLog={handleShowLog}
               onSelectTags={setSelectedTags}
-              canEdit={canEdit && !version.isPublished}
+              canEdit={canEdit && !isPublished}
             />
           </CardContent>
         </Card>
@@ -318,6 +349,39 @@ const VersionEdit = () => {
           }}
         />
       )}
+
+      <AlertDialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认发布版本</AlertDialogTitle>
+            <AlertDialogDescription>
+              您确定要发布版本 {version.versionNumber} 吗？发布后将无法再编辑该版本的标签。
+              <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                <div className="text-sm space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">版本号：</span>
+                    <span className="font-medium">{version.versionNumber}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">标签数量：</span>
+                    <span className="font-medium">{tags.length} 个</span>
+                  </div>
+                  {version.description && (
+                    <div>
+                      <span className="text-muted-foreground">描述：</span>
+                      <p className="mt-1 text-sm">{version.description}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPublish}>确认发布</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
