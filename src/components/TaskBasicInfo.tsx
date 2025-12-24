@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TaskLibrary } from "@/pages/Index";
 import { TagLibrary } from "@/types/permissions";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Link, Unlink, Settings, X } from "lucide-react";
+import { Save, Settings, X, Edit, Check } from "lucide-react";
 
 interface ExtendedTaskLibrary extends TaskLibrary {
   type?: string;
@@ -38,6 +38,8 @@ const TaskBasicInfo = ({
 }: TaskBasicInfoProps) => {
   const [editedLibrary, setEditedLibrary] = useState<ExtendedTaskLibrary>(taskLibrary);
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingTagLibrary, setIsEditingTagLibrary] = useState(false);
+  const [pendingTagLibraryIds, setPendingTagLibraryIds] = useState<string[]>(taskLibrary.connectedTagLibraryIds);
   const { toast } = useToast();
 
   const handleSave = () => {
@@ -52,19 +54,40 @@ const TaskBasicInfo = ({
   };
 
   const handleTagLibraryToggle = (tagLibraryId: string, checked: boolean) => {
+    setPendingTagLibraryIds(prev => 
+      checked 
+        ? [...prev, tagLibraryId]
+        : prev.filter(id => id !== tagLibraryId)
+    );
+  };
+
+  const handleRemoveConnectedTagLibrary = (tagLibraryId: string) => {
+    setPendingTagLibraryIds(prev => prev.filter(id => id !== tagLibraryId));
+  };
+
+  const handleStartEditTagLibrary = () => {
+    setPendingTagLibraryIds(editedLibrary.connectedTagLibraryIds);
+    setIsEditingTagLibrary(true);
+  };
+
+  const handleCancelEditTagLibrary = () => {
+    setPendingTagLibraryIds(editedLibrary.connectedTagLibraryIds);
+    setIsEditingTagLibrary(false);
+  };
+
+  const handleSaveTagLibrary = () => {
     const updatedLibrary = {
       ...editedLibrary,
-      connectedTagLibraryIds: checked
-        ? [...editedLibrary.connectedTagLibraryIds, tagLibraryId]
-        : editedLibrary.connectedTagLibraryIds.filter(id => id !== tagLibraryId)
+      connectedTagLibraryIds: pendingTagLibraryIds
     };
     setEditedLibrary(updatedLibrary);
     setTaskLibraries(prev => 
       prev.map(lib => lib.id === updatedLibrary.id ? updatedLibrary : lib)
     );
+    setIsEditingTagLibrary(false);
     toast({
-      title: checked ? "关联成功" : "取消关联",
-      description: checked ? "标签库已成功关联" : "已取消与标签库的关联",
+      title: "保存成功",
+      description: "标签库关联已更新",
     });
   };
 
@@ -75,6 +98,14 @@ const TaskBasicInfo = ({
     };
     setEditedLibrary(updatedLibrary);
   };
+
+  // 获取当前显示的关联标签库
+  const displayedConnectedTagLibraries = isEditingTagLibrary
+    ? tagLibraries.filter(lib => pendingTagLibraryIds.includes(lib.id))
+    : connectedTagLibraries;
+
+  const hasTagLibraryChanges = JSON.stringify(pendingTagLibraryIds.sort()) !== 
+    JSON.stringify(editedLibrary.connectedTagLibraryIds.sort());
 
   return (
     <div className="space-y-6">
@@ -162,23 +193,50 @@ const TaskBasicInfo = ({
       {/* 多标签库关联管理 */}
       <Card>
         <CardHeader>
-          <CardTitle>标签库关联</CardTitle>
-          <CardDescription>
-            可以关联多个标签库以启用更丰富的标签筛选和分类功能
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>标签库关联</CardTitle>
+              <CardDescription>
+                可以关联多个标签库以启用更丰富的标签筛选和分类功能
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              {isEditingTagLibrary ? (
+                <>
+                  <Button onClick={handleSaveTagLibrary} disabled={!hasTagLibraryChanges}>
+                    <Check className="w-4 h-4 mr-2" />
+                    保存
+                  </Button>
+                  <Button variant="outline" onClick={handleCancelEditTagLibrary}>
+                    取消
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" onClick={handleStartEditTagLibrary}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  编辑关联
+                </Button>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {connectedTagLibraries.length > 0 ? (
+          {displayedConnectedTagLibraries.length > 0 ? (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 <span className="font-medium text-green-800">
-                  已关联 {connectedTagLibraries.length} 个标签库
+                  已关联 {displayedConnectedTagLibraries.length} 个标签库
+                  {isEditingTagLibrary && hasTagLibraryChanges && (
+                    <Badge variant="outline" className="ml-2 text-amber-600 border-amber-300">
+                      未保存
+                    </Badge>
+                  )}
                 </span>
               </div>
               
               <div className="grid gap-3">
-                {connectedTagLibraries.map((tagLibrary) => (
+                {displayedConnectedTagLibraries.map((tagLibrary) => (
                   <div key={tagLibrary.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -189,14 +247,16 @@ const TaskBasicInfo = ({
                         </p>
                       </div>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleTagLibraryToggle(tagLibrary.id, false)}
-                      className="text-red-600 border-red-200 hover:bg-red-50"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                    {isEditingTagLibrary && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleRemoveConnectedTagLibrary(tagLibrary.id)}
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -204,42 +264,44 @@ const TaskBasicInfo = ({
           ) : (
             <div className="text-center py-6 text-gray-500">
               <p>尚未关联标签库</p>
-              <p className="text-sm">选择标签库进行关联</p>
+              <p className="text-sm">点击"编辑关联"选择标签库进行关联</p>
             </div>
           )}
           
-          <div className="space-y-2">
-            <Label>可用标签库</Label>
-            <div className="grid gap-2 max-h-64 overflow-y-auto">
-              {tagLibraries.map((tagLib) => (
-                <div 
-                  key={tagLib.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                >
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      id={`taglib-${tagLib.id}`}
-                      checked={editedLibrary.connectedTagLibraryIds.includes(tagLib.id)}
-                      onCheckedChange={(checked) => 
-                        handleTagLibraryToggle(tagLib.id, checked as boolean)
-                      }
-                    />
-                    <div>
-                      <Label htmlFor={`taglib-${tagLib.id}`} className="font-medium cursor-pointer">
-                        {tagLib.name}
-                      </Label>
-                      <p className="text-sm text-gray-500">
-                        {tagLib.tags?.length || 0} 个标签 • 创建于 {tagLib.createdAt.toLocaleDateString()}
-                      </p>
+          {isEditingTagLibrary && (
+            <div className="space-y-2 pt-4 border-t">
+              <Label>可用标签库</Label>
+              <div className="grid gap-2 max-h-64 overflow-y-auto">
+                {tagLibraries.map((tagLib) => (
+                  <div 
+                    key={tagLib.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id={`taglib-${tagLib.id}`}
+                        checked={pendingTagLibraryIds.includes(tagLib.id)}
+                        onCheckedChange={(checked) => 
+                          handleTagLibraryToggle(tagLib.id, checked as boolean)
+                        }
+                      />
+                      <div>
+                        <Label htmlFor={`taglib-${tagLib.id}`} className="font-medium cursor-pointer">
+                          {tagLib.name}
+                        </Label>
+                        <p className="text-sm text-gray-500">
+                          {tagLib.tags?.length || 0} 个标签 • 创建于 {tagLib.createdAt.toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
+                    <Badge variant={pendingTagLibraryIds.includes(tagLib.id) ? "default" : "secondary"}>
+                      {pendingTagLibraryIds.includes(tagLib.id) ? "已关联" : "未关联"}
+                    </Badge>
                   </div>
-                  <Badge variant={editedLibrary.connectedTagLibraryIds.includes(tagLib.id) ? "default" : "secondary"}>
-                    {editedLibrary.connectedTagLibraryIds.includes(tagLib.id) ? "已关联" : "未关联"}
-                  </Badge>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
