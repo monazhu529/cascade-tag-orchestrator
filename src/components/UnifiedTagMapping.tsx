@@ -16,6 +16,7 @@ interface UnifiedTagMappingProps {
   tags: Tag[];
   syncConfig: any;
   onUpdateSyncConfig: (config: any) => void;
+  disabled?: boolean;
 }
 
 interface FieldMapping {
@@ -38,6 +39,7 @@ interface TagNodeProps {
   settings: { [tagId: string]: TagMappingSettings };
   onUpdateSettings: (tagId: string, settings: TagMappingSettings) => void;
   level: number;
+  disabled?: boolean;
 }
 
 const TagNode = ({ 
@@ -46,7 +48,8 @@ const TagNode = ({
   allTags, 
   settings,
   onUpdateSettings,
-  level 
+  level,
+  disabled = false
 }: TagNodeProps) => {
   const [isExpanded, setIsExpanded] = useState(level <= 2);
   const [showMappings, setShowMappings] = useState(false);
@@ -132,12 +135,13 @@ const TagNode = ({
   };
 
   return (
-    <div className="border-l-2 border-gray-200 pl-4 ml-2">
+    <div className={`border-l-2 border-gray-200 pl-4 ml-2 ${disabled ? 'opacity-60' : ''}`}>
       <div className="flex items-center gap-3 py-2 group">
         <div className="flex items-center gap-1">
           <Checkbox
             checked={tagSettings.selected}
             onCheckedChange={handleSelectionToggle}
+            disabled={disabled}
           />
           {hasChildren && (
             <Button
@@ -185,8 +189,9 @@ const TagNode = ({
           <Switch
             checked={tagSettings.enabled}
             onCheckedChange={handleSyncToggle}
+            disabled={disabled}
           />
-          {tagSettings.selected && (
+          {tagSettings.selected && !disabled && (
             <Button
               variant="ghost"
               size="sm"
@@ -200,7 +205,7 @@ const TagNode = ({
         </div>
       </div>
 
-      {tagSettings.selected && showMappings && (
+      {tagSettings.selected && showMappings && !disabled && (
         <div className="ml-8 mb-3 p-4 bg-gray-50 rounded-lg">
           <div className="space-y-3">
             <p className="text-sm font-medium">字段映射配置：</p>
@@ -285,6 +290,7 @@ const TagNode = ({
                 settings={settings}
                 onUpdateSettings={onUpdateSettings}
                 level={level + 1}
+                disabled={disabled}
               />
             );
           })}
@@ -294,7 +300,7 @@ const TagNode = ({
   );
 };
 
-const UnifiedTagMapping = ({ tags, syncConfig, onUpdateSyncConfig }: UnifiedTagMappingProps) => {
+const UnifiedTagMapping = ({ tags, syncConfig, onUpdateSyncConfig, disabled = false }: UnifiedTagMappingProps) => {
   const [tagSettings, setTagSettings] = useState<{ [tagId: string]: TagMappingSettings }>({});
   
   const rootTags = tags.filter(tag => tag.level === 1 || !tag.parentId);
@@ -368,22 +374,24 @@ const UnifiedTagMapping = ({ tags, syncConfig, onUpdateSyncConfig }: UnifiedTagM
             已选择 {selectedTagsCount} 个标签，启用同步 {enabledTagsCount} 个，配置映射 {totalMappingsCount} 个
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => toggleAllSelection(true)}
-          >
-            全部选择
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => toggleAllSelection(false)}
-          >
-            全部取消
-          </Button>
-        </div>
+        {!disabled && (
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => toggleAllSelection(true)}
+            >
+              全部选择
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => toggleAllSelection(false)}
+            >
+              全部取消
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* 标签树状结构 */}
@@ -404,6 +412,7 @@ const UnifiedTagMapping = ({ tags, syncConfig, onUpdateSyncConfig }: UnifiedTagM
                   settings={tagSettings}
                   onUpdateSettings={handleUpdateSettings}
                   level={1}
+                  disabled={disabled}
                 />
               );
             })}

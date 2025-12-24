@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RotateCcw, Settings } from "lucide-react";
+import { RotateCcw, Settings, Pencil, Save, X } from "lucide-react";
 import { TaskLibrary } from "@/pages/Index";
 import { TagLibrary, SyncConfig } from "@/types/permissions";
 import { useToast } from "@/hooks/use-toast";
@@ -24,8 +24,40 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibraries }: TaskFilterMap
   const [activeTagLibrary, setActiveTagLibrary] = useState<string>(
     connectedTagLibraries[0]?.id || ""
   );
+  
+  // 编辑模式状态
+  const [isEditing, setIsEditing] = useState(false);
+  const [pendingSyncConfigs, setPendingSyncConfigs] = useState<{ [tagLibraryId: string]: SyncConfig }>({});
 
   const { toast } = useToast();
+  
+  // 检查是否有未保存的更改
+  const hasUnsavedChanges = useMemo(() => {
+    if (!isEditing) return false;
+    return JSON.stringify(pendingSyncConfigs) !== JSON.stringify(syncConfigs);
+  }, [isEditing, pendingSyncConfigs, syncConfigs]);
+
+  // 开始编辑
+  const handleStartEdit = () => {
+    setPendingSyncConfigs({ ...syncConfigs });
+    setIsEditing(true);
+  };
+
+  // 取消编辑
+  const handleCancelEdit = () => {
+    setPendingSyncConfigs({});
+    setIsEditing(false);
+  };
+
+  // 保存更改
+  const handleSaveEdit = () => {
+    setSyncConfigs(pendingSyncConfigs);
+    setIsEditing(false);
+    toast({
+      title: "保存成功",
+      description: "筛选映射配置已更新",
+    });
+  };
 
   const handleSyncNow = (tagLibraryId: string) => {
     const tagLibrary = connectedTagLibraries.find(lib => lib.id === tagLibraryId);
@@ -74,7 +106,9 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibraries }: TaskFilterMap
   };
 
   const getCurrentSyncConfig = (tagLibraryId: string): SyncConfig => {
-    return syncConfigs[tagLibraryId] || {
+    // 在编辑模式下，从pendingSyncConfigs获取配置
+    const configSource = isEditing ? pendingSyncConfigs : syncConfigs;
+    return configSource[tagLibraryId] || {
       id: `sync-${tagLibraryId}`,
       taskLibraryId: taskLibrary.id,
       tagLibraryId: tagLibraryId,
@@ -91,10 +125,19 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibraries }: TaskFilterMap
   };
 
   const updateSyncConfig = (tagLibraryId: string, config: SyncConfig) => {
-    setSyncConfigs(prev => ({
-      ...prev,
-      [tagLibraryId]: config
-    }));
+    if (isEditing) {
+      // 编辑模式下更新pendingSyncConfigs
+      setPendingSyncConfigs(prev => ({
+        ...prev,
+        [tagLibraryId]: config
+      }));
+    } else {
+      // 非编辑模式直接更新syncConfigs
+      setSyncConfigs(prev => ({
+        ...prev,
+        [tagLibraryId]: config
+      }));
+    }
   };
 
   if (connectedTagLibraries.length === 0) {
@@ -114,16 +157,44 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibraries }: TaskFilterMap
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-semibold">筛选映射配置</h3>
-          <p className="text-sm text-gray-500">
-            管理 {connectedTagLibraries.length} 个标签库的字段映射和同步设置
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h3 className="text-lg font-semibold">筛选映射配置</h3>
+            <p className="text-sm text-muted-foreground">
+              管理 {connectedTagLibraries.length} 个标签库的字段映射和同步设置
+            </p>
+          </div>
+          {isEditing && hasUnsavedChanges && (
+            <Badge variant="destructive" className="animate-pulse">
+              未保存
+            </Badge>
+          )}
         </div>
-        <Button onClick={handleSyncAllNow} className="bg-gradient-to-r from-blue-600 to-purple-600">
-          <RotateCcw className="w-4 h-4 mr-2" />
-          同步所有标签库
-        </Button>
+        <div className="flex items-center gap-2">
+          {!isEditing ? (
+            <>
+              <Button onClick={handleStartEdit} variant="outline">
+                <Pencil className="w-4 h-4 mr-2" />
+                编辑映射
+              </Button>
+              <Button onClick={handleSyncAllNow} className="bg-gradient-to-r from-blue-600 to-purple-600">
+                <RotateCcw className="w-4 h-4 mr-2" />
+                同步所有标签库
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={handleCancelEdit} variant="outline">
+                <X className="w-4 h-4 mr-2" />
+                取消
+              </Button>
+              <Button onClick={handleSaveEdit} className="bg-gradient-to-r from-green-600 to-emerald-600">
+                <Save className="w-4 h-4 mr-2" />
+                保存
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* 多标签库切换 */}
@@ -161,7 +232,7 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibraries }: TaskFilterMap
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="text-base font-medium">自动同步</Label>
-                        <p className="text-sm text-gray-500">启用后将根据设定频率自动同步标签库数据</p>
+                        <p className="text-sm text-muted-foreground">启用后将根据设定频率自动同步标签库数据</p>
                       </div>
                       <Switch 
                         checked={getCurrentSyncConfig(tagLibrary.id).autoSync}
@@ -169,6 +240,7 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibraries }: TaskFilterMap
                           const config = getCurrentSyncConfig(tagLibrary.id);
                           updateSyncConfig(tagLibrary.id, { ...config, autoSync: checked });
                         }}
+                        disabled={!isEditing}
                       />
                     </div>
 
@@ -181,6 +253,7 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibraries }: TaskFilterMap
                             const config = getCurrentSyncConfig(tagLibrary.id);
                             updateSyncConfig(tagLibrary.id, { ...config, syncFrequency: value });
                           }}
+                          disabled={!isEditing}
                         >
                           <SelectTrigger className="w-48">
                             <SelectValue />
@@ -198,11 +271,11 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibraries }: TaskFilterMap
                     <div className="flex items-center justify-between pt-4 border-t">
                       <div>
                         <p className="text-sm font-medium">上次同步时间</p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {getCurrentSyncConfig(tagLibrary.id).lastSyncTime}
                         </p>
                       </div>
-                      <Button onClick={() => handleSyncNow(tagLibrary.id)} variant="outline">
+                      <Button onClick={() => handleSyncNow(tagLibrary.id)} variant="outline" disabled={isEditing}>
                         <RotateCcw className="w-4 h-4 mr-2" />
                         立即同步
                       </Button>
@@ -215,6 +288,7 @@ const TaskFilterMapping = ({ taskLibrary, connectedTagLibraries }: TaskFilterMap
                   tags={tagLibrary.tags || []}
                   syncConfig={getCurrentSyncConfig(tagLibrary.id)}
                   onUpdateSyncConfig={(config) => updateSyncConfig(tagLibrary.id, config)}
+                  disabled={!isEditing}
                 />
 
                 {/* 同步统计 */}
